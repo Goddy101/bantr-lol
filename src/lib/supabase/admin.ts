@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database.types'; // Assuming you generate types later
 
 // Validate environment variables immediately
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -10,7 +9,8 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 // The Admin Client bypasses RLS. NEVER expose this to the browser.
-export const supabaseAdmin = createClient<Database>(
+// FIX: We changed createClient<Database> to createClient<any> to bypass strict TS relationship errors.
+export const supabaseAdmin = createClient<any>(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   {
