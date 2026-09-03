@@ -1,0 +1,14 @@
+name: Hourly Bantr Referee
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs at minute 0 of every hour
+
+jobs:
+  resolve-duels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel Cron API
+        run: |
+          curl -X GET "https://bantr.lol/api/cron/resolve-duels" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
