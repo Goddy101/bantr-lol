@@ -1,0 +1,19 @@
+name: Hourly Bantr Tasks
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Runs at minute 0 of every hour
+
+jobs:
+  run-hourly-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve Duels
+        run: |
+          curl -X GET "https://bantr.lol/api/cron/resolve-duels" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          
+      - name: Settle Matches
+        run: |
+          curl -X GET "https://bantr.lol/api/cron/settle-matches" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

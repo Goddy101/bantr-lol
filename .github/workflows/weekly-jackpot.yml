@@ -1,0 +1,14 @@
+name: Weekly Bantr Jackpot
+
+on:
+  schedule:
+    - cron: '59 22 * * 0' # Runs at 22:59 every Sunday
+
+jobs:
+  run-jackpot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Weekly Jackpot
+        run: |
+          curl -X GET "https://bantr.lol/api/cron/weekly-jackpot" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
