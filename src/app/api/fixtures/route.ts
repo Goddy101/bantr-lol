@@ -21,9 +21,18 @@ export async function GET() {
 
     const data = await res.json();
 
+    // if (!data.response || !Array.isArray(data.response)) {
+    //   console.error('API-Football Error:', data.errors || 'Unknown error');
+    //   return NextResponse.json({ success: false, fixtures: [] }, { status: 200 });
+    // }
+
     if (!data.response || !Array.isArray(data.response)) {
-      console.error('API-Football Error:', data.errors || 'Unknown error');
-      return NextResponse.json({ success: false, fixtures: [] }, { status: 200 });
+      // Temporarily print the exact error to the actual website screen
+      return NextResponse.json({ 
+        success: false, 
+        error_details: data.errors || data.message || 'Unknown API Error',
+        fixtures: [] 
+      }, { status: 200 });
     }
 
   // Map the massive, messy API response into a clean, lightweight array for your UI
