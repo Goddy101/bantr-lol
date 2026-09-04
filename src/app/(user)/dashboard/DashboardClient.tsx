@@ -8,6 +8,7 @@ import ShareReceiptButton from "@/components/shared/ShareReceiptButton";
 import AffiliateCard from "@/components/shared/AffiliateCard";
 import { signOut } from "@/app/actions/auth";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { generateRoast } from "@/utils/roastEngine";
 
 const createClient = () =>
   createSupabaseClient(
@@ -39,6 +40,9 @@ export default function DashboardClient({ userData, activeDuels, pastDuels }: Da
   // Modals State
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+
+  // Only generate this once per mount so it doesn't flicker on re-renders
+const [dailyRoast] = useState(() => generateRoast(userData.walletBalance, userData.ballIqPoints, pastDuels));
 
   // 2. SUPABASE REALTIME LISTENER (Updates vault balance & Ball IQ instantly when webhook or referee cron runs)
   useEffect(() => {
@@ -114,6 +118,17 @@ export default function DashboardClient({ userData, activeDuels, pastDuels }: Da
       </div>
 
       <div className="p-4 max-w-lg mx-auto space-y-6 mt-2">
+
+        {/* THE BANTR ROAST BAR */}
+<div className="bg-red-500/10 border-y border-red-500/20 py-2 px-4 flex items-center gap-3 overflow-hidden">
+  <div className="bg-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded shadow-sm whitespace-nowrap">
+    Daily Banter
+  </div>
+  <p className="text-xs font-medium text-red-200/80 truncate italic">
+    "{dailyRoast}"
+  </p>
+</div>
+
         {/* The Vault Card */}
         <div className="bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all duration-500" />
