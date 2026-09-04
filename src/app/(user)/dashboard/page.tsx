@@ -166,7 +166,7 @@ export default async function DashboardPage() {
           
 //           <div className="flex justify-between items-start mb-6 relative z-10">
 //             <div>
-//               <div className="text-xs text-neutral-400 font-bold uppercase tracking-widest mb-1">Total Balance</div>
+//               <div className="text-xs text-neutral-400 font-bold uppercase tracking-widest mb-1">lance</div>
 //               <div className="text-4xl font-black text-white">₦{USER_DATA.walletBalance.toLocaleString()}</div>
 //             </div>
             
