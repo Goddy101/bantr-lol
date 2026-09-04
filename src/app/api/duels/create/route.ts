@@ -61,10 +61,11 @@ export async function POST(req: Request) {
     // });
 
     // 4. Execute the Atomic Postgres Function
+  // 4. Execute the Atomic Postgres Function
     const { data: duelId, error } = await supabaseAdmin.rpc('create_duel', {
       p_user_id: user.id,
       p_match_id: match_id.toString(),
-      p_prediction_creator: prediction, // <-- FIXED: Matched to your DB!
+      p_prediction: prediction, // <-- MUST BE p_prediction
       p_stake_amount: stake_amount
     });
 
