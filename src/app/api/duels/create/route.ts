@@ -52,11 +52,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Too late! This match has already started.' }, { status: 400 });
     }
 
+    // // 4. Execute the Atomic Postgres Function
+    // const { data: duelId, error } = await supabaseAdmin.rpc('create_duel', {
+    //   p_user_id: user.id,
+    //   p_match_id: match_id.toString(),
+    //   p_prediction: prediction,
+    //   p_stake_amount: stake_amount
+    // });
+
     // 4. Execute the Atomic Postgres Function
     const { data: duelId, error } = await supabaseAdmin.rpc('create_duel', {
       p_user_id: user.id,
       p_match_id: match_id.toString(),
-      p_prediction: prediction,
+      p_prediction_creator: prediction, // <-- FIXED: Matched to your DB!
       p_stake_amount: stake_amount
     });
 
