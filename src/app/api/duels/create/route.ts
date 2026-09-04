@@ -4,7 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createClient<any>(); // <any> added here just in case to avoid strict TS errors
+  //  const supabase = await createClient<any>();
+    const supabase = await createClient(); // <any> added here just in case to avoid strict TS errors
     
     // 1. Authenticate the user securely
     const { data: { user } } = await supabase.auth.getUser();
