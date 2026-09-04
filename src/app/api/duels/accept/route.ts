@@ -13,10 +13,10 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { duel_id } = body;
+    const { duel_id, prediction } = body;
 
-    if (!duel_id) {
-      return NextResponse.json({ error: 'Missing duel_id.' }, { status: 400 });
+    if (!duel_id || !prediction) {
+      return NextResponse.json({ error: 'Missing duel_id or prediction.' }, { status: 400 });
     }
 
     // 2. Fetch the duel to get the match_id
@@ -55,9 +55,15 @@ export async function POST(req: Request) {
     }
 
     // 4. Execute the Atomic Postgres Function to lock the opponent's funds
+    // const { error: acceptError } = await supabaseAdmin.rpc('accept_duel', {
+    //   p_duel_id: duel_id,
+    //   p_opponent_id: user.id
+    // });
+
     const { error: acceptError } = await supabaseAdmin.rpc('accept_duel', {
       p_duel_id: duel_id,
-      p_opponent_id: user.id
+      p_opponent_id: user.id,
+      p_prediction: prediction // <-- ADD THIS LINE!
     });
 
     if (acceptError) {
