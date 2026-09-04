@@ -6,8 +6,10 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // 2. THE DOCS WERE RIGHT: season is mandatory when league is present!
-    const apiUrl = `https://v3.football.api-sports.io/fixtures?league=39&season=2026&next=10`;
+    //const apiUrl = `https://v3.football.api-sports.io/fixtures?league=39&season=2026&next=10`;
 
+    // Fetch the LAST 10 matches of the 2024 season instead of the "next" 10 
+    const apiUrl = `https://v3.football.api-sports.io/fixtures?league=39&season=2024&last=10`;
     const res = await fetch(apiUrl, {
       headers: {
         'x-apisports-key': process.env.API_FOOTBALL_KEY!,
@@ -32,21 +34,44 @@ export async function GET() {
       return NextResponse.json({ success: false, fixtures: [] }, { status: 200 });
     }
 
-    const mappedFixtures = data.response.map((match: any) => ({
-      id: match.fixture.id.toString(),
-      home: match.teams.home.name,
-      away: match.teams.away.name,
-      homeLogo: match.teams.home.logo,
-      awayLogo: match.teams.away.logo,
-      league: match.league.name,
-      time: new Intl.DateTimeFormat('en-NG', {
-        weekday: 'short',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-        timeZone: 'Africa/Lagos'
-      }).format(new Date(match.fixture.date)),
-    }));
+    // const mappedFixtures = data.response.map((match: any) => ({
+    //   id: match.fixture.id.toString(),
+    //   home: match.teams.home.name,
+    //   away: match.teams.away.name,
+    //   homeLogo: match.teams.home.logo,
+    //   awayLogo: match.teams.away.logo,
+    //   league: match.league.name,
+    //   time: new Intl.DateTimeFormat('en-NG', {
+    //     weekday: 'short',
+    //     hour: 'numeric',
+    //     minute: 'numeric',
+    //     hour12: true,
+    //     timeZone: 'Africa/Lagos'
+    //   }).format(new Date(match.fixture.date)),
+    // }));
+
+
+    const mappedFixtures = data.response.map((match: any) => {
+      // Create a fake future date for the UI so it looks like it's happening tomorrow
+      const fakeFutureDate = new Date();
+      fakeFutureDate.setDate(fakeFutureDate.getDate() + 1);
+
+      return {
+        id: match.fixture.id.toString(),
+        home: match.teams.home.name,
+        away: match.teams.away.name,
+        homeLogo: match.teams.home.logo,
+        awayLogo: match.teams.away.logo,
+        league: match.league.name,
+        time: new Intl.DateTimeFormat('en-NG', {
+          weekday: 'short',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true,
+          timeZone: 'Africa/Lagos'
+        }).format(fakeFutureDate), // Use the fake date for the UI!
+      };
+    });
 
     return NextResponse.json({ success: true, fixtures: mappedFixtures }, { status: 200 });
   } catch (error: any) {
