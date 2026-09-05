@@ -21,10 +21,17 @@ export async function POST(req: Request) {
     const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://bantr.lol';
 
     // 3. Use Sandbox for development, Live for production
-    const baseUrl = process.env.NODE_ENV === 'production' 
+  //  const baseUrl = process.env.NODE_ENV === 'production' 
+
+    // Force Sandbox mode for now, even on Vercel
+
       //const baseUrl = process.env.NODE_ENV === 'sandbox'
-      ? 'https://api.bachs.io/v1/checkout-sessions'
-      : 'https://sandbox-api.bachs.io/v1/checkout-sessions';
+  //    ? 'https://api.bachs.io/v1/checkout-sessions'
+  //    : 'https://sandbox-api.bachs.io/v1/checkout-sessions';
+
+  // sandbox mode for now, even on Vercel
+
+  const baseUrl = 'https://sandbox-api.bachs.io/v1/checkout-sessions';
 
     // Check if we accidentally used a test key in production
     if (process.env.NODE_ENV === 'production' && process.env.BACHS_SECRET_KEY?.includes('test')) {
