@@ -4,25 +4,37 @@ import { createClient } from "@/lib/supabase/server";
 // Force dynamic rendering so the live arena feed is always up to date
 export const dynamic = "force-dynamic";
 
+interface Duel {
+  id: string;
+  match: string;
+  stake: number | null;
+  status: string;
+}
+
+interface Player {
+  username: string;
+  ball_iq_points: number;
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
 
   // 1. Fetch live open challenges to create instant FOMO
   // (Adjust the column names if your schema differs slightly)
-  const { data: openDuels } = await supabase
+  const { data: fetchedOpenDuels } = await supabase
     .from("duels")
     .select("id, match, stake, status")
     .eq("status", "open")
     .order("created_at", { ascending: false })
-    .limit(3)
-    .catch(() => ({ data: [] })); // Safe fallback
+    .limit(3);
+  const openDuels = (fetchedOpenDuels ?? []) as Duel[];
 
   // 2. Fetch Top Players to showcase skill/Ball IQ
   const { data: topPlayers } = await supabase
     .from("users")
     .select("username, ball_iq_points")
     .order("ball_iq_points", { ascending: false })
-    .limit(3);
+    .limit(3) as unknown as { data: Player[] | null };
 
   return (
     <div className="min-h-screen bg-neutral-950 font-sans selection:bg-green-500/30 text-white overflow-x-hidden">
