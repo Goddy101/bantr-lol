@@ -17,10 +17,19 @@ export async function POST(req: Request) {
     // 1. Bachs Rule: Must be a decimal string, NO minor units.
     const stringAmount = Number(amount).toFixed(2); 
 
-    // 2. Use Sandbox for development, Live for production
+    // 2. FIX: Dynamically grab the exact URL of the site, preventing 'undefined' errors on Vercel
+    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://bantr.lol';
+
+    // 3. Use Sandbox for development, Live for production
     const baseUrl = process.env.NODE_ENV === 'production' 
+      //const baseUrl = process.env.NODE_ENV === 'sandbox'
       ? 'https://api.bachs.io/v1/checkout-sessions'
       : 'https://sandbox-api.bachs.io/v1/checkout-sessions';
+
+    // Check if we accidentally used a test key in production
+    if (process.env.NODE_ENV === 'production' && process.env.BACHS_SECRET_KEY?.includes('test')) {
+      console.warn("WARNING: You are using a TEST key in a PRODUCTION environment.");
+    }
 
     const response = await fetch(baseUrl, {
       method: 'POST',
@@ -34,10 +43,10 @@ export async function POST(req: Request) {
           amount: stringAmount
         },
         customer: { 
-          email: user.email || `${user.phone}@bantr.lol` 
+          email: user.email || `${user.id}@bantr.lol` 
         },
-        success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?deposit=success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?deposit=cancelled`,
+        success_url: `${origin}/dashboard?deposit=success`,
+        cancel_url: `${origin}/dashboard?deposit=cancelled`,
         reference: `dep_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
         metadata: {
           user_id: user.id
@@ -45,17 +54,25 @@ export async function POST(req: Request) {
       })
     });
 
-    const data = await response.json();
+    // We must safely parse the JSON, just in case Bachs throws a 500 HTML error
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      throw new Error(`Bachs API did not return JSON. Status: ${response.status}`);
+    }
 
-    // 3. Bachs returns 'checkout_url' instead of 'authorization_url'
+    // 4. Bachs returns 'checkout_url' instead of 'authorization_url'
     if (!response.ok || !data.checkout_url) {
-      throw new Error(data.message || 'Payment gateway failed');
+      // Throw the EXACT error Bachs gives us
+      throw new Error(data.message || data.error || `Payment gateway failed with status ${response.status}`);
     }
 
     return NextResponse.json({ success: true, checkoutUrl: data.checkout_url });
 
   } catch (error: any) {
     console.error('Deposit Init Error:', error.message);
-    return NextResponse.json({ error: 'Could not initialize payment' }, { status: 500 });
+    // FIX: Send the REAL error message to the frontend so you can see it in the UI alert!
+    return NextResponse.json({ error: error.message || 'Could not initialize payment' }, { status: 500 });
   }
 }

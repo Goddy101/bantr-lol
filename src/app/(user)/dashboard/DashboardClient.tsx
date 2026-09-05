@@ -83,6 +83,11 @@ export default function DashboardClient({ userData, activeDuels, pastDuels }: Da
           </div>
         </div>
 
+        <Link href="/leaderboard" className="flex items-center gap-1.5 text-[10px] font-black text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-3 py-2.5 rounded-lg hover:bg-yellow-500/20 transition-all tracking-widest uppercase">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            Rankings
+          </Link>
+
         <form action={signOut}>
           <button type="submit" className="flex items-center gap-2 text-[10px] font-black text-red-500 bg-red-500/5 border border-red-500/10 px-3 py-2.5 rounded-lg hover:bg-red-500/20 hover:border-red-500/30 transition-all tracking-widest uppercase group">
             <span>Exit</span>
