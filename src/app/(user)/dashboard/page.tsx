@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin"; 
 import DashboardClient from "./DashboardClient";
 import { redirect } from "next/navigation";
 
@@ -12,42 +13,68 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // 2. Fetch their profile data safely
-  const { data: profile } = await supabase
+  // 2. Fetch their profile data safely (REMOVED is_partner so it doesn't crash)
+  let { data: profile } = await supabase
     .from("users")
-    .select("username, wallet_balance, ball_iq_points, is_partner")
+    .select("username, wallet_balance, ball_iq_points")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
+  // 3. THE AUTO-HEALER
   if (!profile) {
-    redirect("/login");
+    console.log("🚨 DASHBOARD: Profile missing! Auto-healing now...");
+    
+    const safeUsername = user.email 
+      ? user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, "") 
+      : `player_${Math.floor(Math.random() * 10000)}`;
+
+    const { data: newProfile, error: insertError } = await supabaseAdmin
+      .from("users")
+      .insert({
+        id: user.id,
+        username: safeUsername,
+        wallet_balance: 0,
+        ball_iq_points: 0
+        // 🚨 REMOVED is_partner from the insert to prevent the crash!
+      })
+      .select("username, wallet_balance, ball_iq_points")
+      .single();
+
+    if (insertError) {
+      console.error("❌ FATAL ERROR CREATING PROFILE:", insertError.message);
+      redirect("/login"); 
+    } else {
+      profile = newProfile;
+      console.log("✅ DASHBOARD: Profile successfully healed! Letting them in.");
+    }
   }
 
-  // 3. Construct the userData object - WITH THE ID INCLUDED
+  // 4. Construct the userData object
   const userData = {
     id: user.id, 
     username: profile.username || "Unknown",
     walletBalance: profile.wallet_balance || 0,
     ballIqPoints: profile.ball_iq_points || 0,
-    isPartner: profile.is_partner || false,
+    // Safely default to false in Javascript without relying on the database
+    isPartner: false,
     rank: (profile.ball_iq_points || 0) > 500 ? "Odogwu" : "Rookie", 
   };
 
-  // 4. Fetch Active Duels (open or active)
+  // 5. Fetch Active Duels
   const { data: activeDuels } = await supabase
     .from("duels")
     .select("*")
     .in("status", ["open", "active"])
     .or(`creator_id.eq.${user.id},acceptor_id.eq.${user.id}`);
 
-  // 5. Fetch Past Duels (settled or cancelled)
+  // 6. Fetch Past Duels
   const { data: pastDuels } = await supabase
     .from("duels")
     .select("*")
     .in("status", ["settled", "cancelled"])
     .or(`creator_id.eq.${user.id},acceptor_id.eq.${user.id}`);
 
-  // 6. Generate the Daily Roast on the SERVER to prevent hydration mismatches
+  // 7. Generate the Daily Roast
   const ROASTS = [
     "Put your money where your mouth is. Or keep quiet.",
     "Football is not played on paper, and clearly not in your head either.",
@@ -57,7 +84,7 @@ export default async function DashboardPage() {
   ];
   const selectedRoast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
 
-  // 7. Fetch the currently active sponsor (using maybeSingle so it doesn't crash if no sponsor exists)
+  // 8. Fetch the currently active sponsor
   const { data: activeSponsor } = await supabase
     .from("sponsors")
     .select("*")
@@ -70,7 +97,7 @@ export default async function DashboardPage() {
       activeDuels={activeDuels || []} 
       pastDuels={pastDuels || []} 
       dailyRoast={selectedRoast}
-      sponsor={activeSponsor} // <-- Passed down to the client!
+      sponsor={activeSponsor}
     />
   );
 }

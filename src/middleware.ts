@@ -2,14 +2,10 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // 1. Create an unmodified response
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
-  // 2. Initialize the Supabase Client using the new setAll/getAll standard
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -19,15 +15,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          // Update the request cookies first
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          
-          // Re-create the response ONCE with the updated request headers
-          response = NextResponse.next({
-            request,
-          });
-          
-          // Safely attach ALL cookie chunks to the final response without overwriting
+          response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
@@ -36,17 +25,24 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 3. Get the current user session securely
   const { data: { user } } = await supabase.auth.getUser();
-
   const url = request.nextUrl;
   
-  // Define which paths require the user to be logged in
-  // NOTE: I added '/rumble' here to protect your new Rumble routes!
   const isProtectedRoute = url.pathname.startsWith('/dashboard') || url.pathname.startsWith('/duel') || url.pathname.startsWith('/rumble');
   const isAuthRoute = url.pathname.startsWith('/login');
 
-  // 4. The Bouncer Logic
+  // --- OUR TERMINAL LOGS ---
+  if (url.pathname.startsWith('/dashboard')) {
+    console.log("=====================================");
+    console.log("🚦 SOMEONE IS TRYING TO ENTER /dashboard");
+    if (user) {
+      console.log("✅ MIDDLEWARE: User found in cookies! Letting them in.");
+    } else {
+      console.log("❌ MIDDLEWARE: No User found in cookies! BOUNCING THEM BACK!");
+    }
+    console.log("=====================================");
+  }
+
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -63,7 +59,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
