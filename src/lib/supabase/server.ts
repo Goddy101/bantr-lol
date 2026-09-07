@@ -10,7 +10,7 @@ export async function createClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return cookieStore.getAll(); // <-- FIXED: One line, correct variable
         },
         setAll(cookiesToSet) {
           try {
