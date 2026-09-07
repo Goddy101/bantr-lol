@@ -1,59 +1,64 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { supabaseAdmin } from "@/lib/supabase/admin"; // 🚨 IMPORT THE ADMIN BYPASS
+import { notFound, redirect } from "next/navigation";
 import RumbleClientUI from "./RumbleClientUI";
 
-export default async function RumblePage({ params }: { params: { id: string } }) {
+export default async function RumblePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  // 1. We still use the normal client to securely verify WHO is viewing the page
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // 1. Fetch the Rumble Pool
-  const { data: rumble, error: rumbleError } = await supabase
+  if (!user) {
+    redirect("/login");
+  }
+
+  // 2. THE BYPASS: We use supabaseAdmin to fetch the Rumble Pool so RLS cannot block us
+  const { data: rumble, error: rumbleError } = await supabaseAdmin
     .from("rumble_pools")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (rumbleError || !rumble) {
+    console.error("Rumble Fetch Error:", rumbleError?.message);
     notFound();
   }
 
-  // 2. Fetch the Participants (and join with the users table to get usernames)
-  const { data: participants } = await supabase
+  // 3. THE BYPASS: Fetch the Participants securely
+  const { data: participants } = await supabaseAdmin
     .from("rumble_participants")
     .select("prediction, users(username)")
-    .eq("rumble_id", params.id)
+    .eq("rumble_id", id)
     .order("joined_at", { ascending: true });
 
-  // 3. Get Auth State
-  const { data: { user } } = await supabase.auth.getUser();
   let userBalance = 0;
   let hasJoined = false;
 
-  if (user) {
-    // Check if they already joined
-    const { data: participantRecord } = await supabase
-      .from("rumble_participants")
-      .select("id")
-      .eq("rumble_id", params.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
+  // 4. THE BYPASS: Check participant record and wallet balance
+  const { data: participantRecord } = await supabaseAdmin
+    .from("rumble_participants")
+    .select("id")
+    .eq("rumble_id", id)
+    .eq("user_id", user.id)
+    .maybeSingle();
       
-    if (participantRecord) hasJoined = true;
+  if (participantRecord) hasJoined = true;
 
-    // Get their current balance for the Client Zero-Balance guard
-    const { data: profile } = await supabase
-      .from("users")
-      .select("wallet_balance")
-      .eq("id", user.id)
-      .single();
+  const { data: profile } = await supabaseAdmin
+    .from("users")
+    .select("wallet_balance")
+    .eq("id", user.id)
+    .maybeSingle();
       
-    if (profile) userBalance = profile.wallet_balance || 0;
-  }
+  if (profile) userBalance = profile.wallet_balance || 0;
 
   return (
     <RumbleClientUI 
       rumble={rumble}
       participants={participants || []}
-      currentUserId={user?.id || null}
+      currentUserId={user.id}
       hasJoined={hasJoined}
       userBalance={userBalance}
     />
