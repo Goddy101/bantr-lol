@@ -40,8 +40,8 @@ export async function signUp(formData: FormData) {
     }
   }
   
-  // Instantly teleport them to the dashboard
-  redirect("/dashboard");
+  // THE FIX: Return a clean success object instead of throwing a redirect error
+  return { success: true };
 }
 
 export async function signIn(formData: FormData) {
@@ -61,11 +61,12 @@ export async function signIn(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  redirect("/dashboard");
+  // THE FIX: Return a clean success object instead of throwing a redirect error
+  return { success: true };
 }
 
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/");
+  redirect("/"); // This one is fine because it's called via a native <form action>
 }

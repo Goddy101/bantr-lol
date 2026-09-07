@@ -15,6 +15,26 @@ function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   setErrorMsg("");
+
+  //   const formData = new FormData(e.currentTarget);
+  //   const result = isSignUp ? await signUp(formData) : await signIn(formData);
+
+  //   if (result?.error) {
+  //     setErrorMsg(result.error);
+  //     setIsLoading(false);
+  //   } else {
+  //     // THE FIX: Force the client to navigate to the dashboard upon success!
+  //     router.push("/dashboard");
+  //     router.refresh(); 
+  //   }
+  // };
+
+
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -27,9 +47,10 @@ function AuthForm() {
       setErrorMsg(result.error);
       setIsLoading(false);
     } else {
-      // THE FIX: Force the client to navigate to the dashboard upon success!
-      router.push("/dashboard");
-      router.refresh(); 
+      // THE SILVER BULLET FIX: 
+      // This forces the browser to make a fresh, hard request to the server, 
+      // carrying the new Supabase cookie and completely destroying the Next.js cache.
+      window.location.href = "/dashboard";
     }
   };
 
