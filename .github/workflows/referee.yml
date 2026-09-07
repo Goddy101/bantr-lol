@@ -1,14 +1,15 @@
-name: Hourly Bantr Referee
+name: Bantr Automated Referee
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs at minute 0 of every hour
+    - cron: '*/15 * * * *' # Upgraded to every 15 minutes for faster payouts!
+  workflow_dispatch: # Adds a button in GitHub to manually trigger it for testing
 
 jobs:
-  resolve-duels:
+  settle-matches:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel Cron API
+      - name: Trigger Unified Referee for Duels and Rumbles
         run: |
-          curl -X GET "https://bantr.lol/api/cron/resolve-duels" \
+          curl -X GET "https://bantr.lol/api/cron/settle-rumbles" \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
