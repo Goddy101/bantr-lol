@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // <-- Added for smart routing
-import { toast } from "sonner"; // <-- Added for beautiful notifications
+import { useRouter } from "next/navigation"; 
+import { toast } from "sonner"; 
 import WithdrawModal from "@/components/shared/WithdrawModal";
 import DepositModal from "@/components/shared/DepositModal";
 import ShareReceiptButton from "@/components/shared/ShareReceiptButton";
 import AffiliateCard from "@/components/shared/AffiliateCard";
+import SponsorCard from "@/components/shared/SponsorCard"; // <-- Added SponsorCard import
 import { signOut } from "@/app/actions/auth";
 import { createClient } from "@/lib/supabase/client";
 
@@ -23,10 +24,11 @@ interface DashboardClientProps {
   activeDuels: any[];
   pastDuels: any[];
   dailyRoast: string; 
+  sponsor?: any; // <-- Added sponsor prop
 }
 
-export default function DashboardClient({ userData, activeDuels, pastDuels, dailyRoast }: DashboardClientProps) {
-  const router = useRouter(); // Initialize router
+export default function DashboardClient({ userData, activeDuels, pastDuels, dailyRoast, sponsor }: DashboardClientProps) {
+  const router = useRouter(); 
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
@@ -65,7 +67,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
     const link = `${window.location.origin}/duel/${duelId}`;
     navigator.clipboard.writeText(link);
     setCopiedId(duelId);
-    toast.success("Link copied! Drop it in the group chat."); // <-- Sleek Toast Notification
+    toast.success("Link copied! Drop it in the group chat."); 
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -73,7 +75,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
   const handleCreateDuel = () => {
     if (balance < 500) {
       toast.error("Insufficient funds. Fund your vault to place a stake!");
-      setIsDepositOpen(true); // Automatically pops the funding modal
+      setIsDepositOpen(true); 
     } else {
       router.push("/duel/create");
     }
@@ -277,6 +279,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
                         loser={duel.opponent || "Unknown"}
                         amount={duel.payout || 0}
                         match={duel.match}
+                        sponsor={sponsor} //
                       />
                     </div>
                   )}
@@ -315,6 +318,9 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
           )}
         </div>
 
+        {/* NATIVE SPONSOR AD MOUNTED HERE */}
+        <SponsorCard sponsor={sponsor} />
+
         {/* AFFILIATE CARD MOUNTED HERE */}
         <AffiliateCard userId={userData.id} isPartner={userData.isPartner} />
 
@@ -331,6 +337,13 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
             CREATE NEW DUEL
           </button>
         </div>
+
+        <Link href="/rumble/create" className="w-full mt-2 block">
+  <button className="w-full flex items-center justify-center gap-2 bg-neutral-900 text-yellow-500 border border-yellow-500/20 font-black text-[15px] tracking-wide py-4 rounded-xl hover:bg-neutral-800 transition-all shadow-[0_0_20px_rgba(250,204,21,0.1)] active:scale-[0.98]">
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+    HOST MULTIPLAYER RUMBLE
+  </button>
+</Link>
       </div>
 
       <DepositModal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} />

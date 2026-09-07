@@ -2,11 +2,12 @@
 
 import { useState, Suspense } from "react";
 import { signIn, signUp } from "@/app/actions/auth";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation"; // <-- Added useRouter
 import Link from "next/link";
 
 function AuthForm() {
   const searchParams = useSearchParams();
+  const router = useRouter(); // <-- Initialized router
   const refCode = searchParams.get("ref");
 
   // Default to Sign Up if they came from a referral link
@@ -25,6 +26,10 @@ function AuthForm() {
     if (result?.error) {
       setErrorMsg(result.error);
       setIsLoading(false);
+    } else {
+      // THE FIX: Force the client to navigate to the dashboard upon success!
+      router.push("/dashboard");
+      router.refresh(); 
     }
   };
 

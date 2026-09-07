@@ -57,12 +57,20 @@ export default async function DashboardPage() {
   ];
   const selectedRoast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
 
+  // 7. Fetch the currently active sponsor (using maybeSingle so it doesn't crash if no sponsor exists)
+  const { data: activeSponsor } = await supabase
+    .from("sponsors")
+    .select("*")
+    .eq("is_active", true)
+    .maybeSingle();
+
   return (
     <DashboardClient 
       userData={userData} 
       activeDuels={activeDuels || []} 
       pastDuels={pastDuels || []} 
-      dailyRoast={selectedRoast} // <-- Handed to the client safely!
+      dailyRoast={selectedRoast}
+      sponsor={activeSponsor} // <-- Passed down to the client!
     />
   );
 }
