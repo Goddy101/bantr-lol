@@ -23,25 +23,24 @@ function AuthForm() {
     const formData = new FormData(e.currentTarget);
 
     try {
-      // 1. Send credentials to the Next.js Server Action
+      // Send credentials to the Next.js Server Action
       const result = isSignUp ? await signUp(formData) : await signIn(formData);
 
+      // IF WE REACH THIS LINE, IT MEANS THERE WAS AN ERROR.
+      // (Because if it succeeded, the server action would have redirected the page already!)
       if (result?.error) {
         setErrorMsg(result.error);
-        setIsLoading(false);
-      } else if (result?.success) {
-        // 2. The server successfully set the cookie. Now we navigate.
-        setSuccessMsg("Authentication secure! Entering Arena...");
-        
-        // We use .replace() instead of .href so users can't accidentally hit the "Back" button to return to login
-        window.location.replace("/dashboard");
+      } else {
+        // Fallback catch (should rarely hit this due to server redirect)
+        setErrorMsg("Failed to connect to the arena. Try again.");
       }
+      setIsLoading(false);
+      
     } catch (err: any) {
       setErrorMsg("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   };
-
   return (
     <div className="w-full max-w-[420px] relative z-10 animate-in fade-in zoom-in-[0.98] duration-700">
       

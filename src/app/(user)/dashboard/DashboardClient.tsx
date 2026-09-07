@@ -9,7 +9,6 @@ import DepositModal from "@/components/shared/DepositModal";
 import ShareReceiptButton from "@/components/shared/ShareReceiptButton";
 import AffiliateCard from "@/components/shared/AffiliateCard";
 import SponsorCard from "@/components/shared/SponsorCard"; // <-- Added SponsorCard import
-import { signOut } from "@/app/actions/auth";
 import { createClient } from "@/lib/supabase/client";
 
 interface DashboardClientProps {
@@ -81,6 +80,19 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
     }
   };
 
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      toast.error("Unable to sign out. Please try again.");
+      return;
+    }
+
+    router.push("/login");
+    router.refresh();
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white pb-28 font-sans selection:bg-green-500/30">
       
@@ -103,7 +115,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
             Rankings
           </Link>
 
-        <form action={signOut}>
+        <form onSubmit={(event) => { event.preventDefault(); void handleSignOut(); }}>
           <button type="submit" className="flex items-center gap-2 text-[10px] font-black text-red-500 bg-red-500/5 border border-red-500/10 px-3 py-2.5 rounded-lg hover:bg-red-500/20 hover:border-red-500/30 transition-all tracking-widest uppercase group">
             <span>Exit</span>
             <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
