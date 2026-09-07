@@ -1,39 +1,17 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signIn, signUp } from "@/app/actions/auth";
-import { useSearchParams, useRouter } from "next/navigation"; // <-- Added useRouter
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client"; // <-- The Magic Fix
 
 function AuthForm() {
   const searchParams = useSearchParams();
-  const router = useRouter(); // <-- Initialized router
   const refCode = searchParams.get("ref");
 
-  // Default to Sign Up if they came from a referral link
   const [isSignUp, setIsSignUp] = useState(!!refCode); 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   setIsLoading(true);
-  //   setErrorMsg("");
-
-  //   const formData = new FormData(e.currentTarget);
-  //   const result = isSignUp ? await signUp(formData) : await signIn(formData);
-
-  //   if (result?.error) {
-  //     setErrorMsg(result.error);
-  //     setIsLoading(false);
-  //   } else {
-  //     // THE FIX: Force the client to navigate to the dashboard upon success!
-  //     router.push("/dashboard");
-  //     router.refresh(); 
-  //   }
-  // };
-
-
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,16 +19,50 @@ function AuthForm() {
     setErrorMsg("");
 
     const formData = new FormData(e.currentTarget);
-    const result = isSignUp ? await signUp(formData) : await signIn(formData);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const username = formData.get("username") as string;
+    const refCodeInput = formData.get("refCode") as string;
 
-    if (result?.error) {
-      setErrorMsg(result.error);
-      setIsLoading(false);
-    } else {
-      // THE SILVER BULLET FIX: 
-      // This forces the browser to make a fresh, hard request to the server, 
-      // carrying the new Supabase cookie and completely destroying the Next.js cache.
+    const supabase = createClient(); // Initialize Supabase on the client
+
+    try {
+      if (isSignUp) {
+        // --- SIGN UP LOGIC ---
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username: username?.toLowerCase().replace(/\s+/g, "") },
+          },
+        });
+
+        if (error) throw error;
+
+        // Affiliate Hook
+        if (refCodeInput && data.user) {
+          await supabase
+            .from("users")
+            .update({ referred_by_admin: refCodeInput })
+            .eq("id", data.user.id);
+        }
+
+      } else {
+        // --- LOG IN LOGIC ---
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+      }
+
+      // If we reach here, Supabase has successfully set the browser cookies!
       window.location.href = "/dashboard";
+      
+    } catch (error: any) {
+      setErrorMsg(error.message || "Authentication failed. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -142,7 +154,6 @@ function AuthForm() {
           </div>
 
           <div className="space-y-1.5">
-            {/* UPDATED LABEL AREA WITH FORGOT PASSWORD LINK */}
             <div className="flex justify-between items-center pl-1 pr-1">
               <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Password</label>
               {!isSignUp && (
