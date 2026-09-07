@@ -3,7 +3,8 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client"; // <-- The Magic Fix
+import { createClient } from "@/lib/supabase/client"; 
+import { toast } from "sonner"; // Make sure Sonner is in your layout!
 
 function AuthForm() {
   const searchParams = useSearchParams();
@@ -22,11 +23,12 @@ function AuthForm() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const username = formData.get("username") as string;
-    const refCodeInput = formData.get("refCode") as string;
 
-    const supabase = createClient(); // Initialize Supabase on the client
+    const supabase = createClient(); 
 
     try {
+      let authUserId = null;
+
       if (isSignUp) {
         // --- SIGN UP LOGIC ---
         const { data, error } = await supabase.auth.signUp({
@@ -38,30 +40,68 @@ function AuthForm() {
         });
 
         if (error) throw error;
-
-        // Affiliate Hook
-        if (refCodeInput && data.user) {
-          await supabase
-            .from("users")
-            .update({ referred_by_admin: refCodeInput })
-            .eq("id", data.user.id);
+        
+        // TRAP 1: Email Verification
+        if (!data.session) {
+          toast.success("Account created! Please check your email to verify your account before logging in.");
+          setIsLoading(false);
+          return; // Stop here, they can't go to the dashboard yet
         }
+        
+        authUserId = data.user?.id;
 
       } else {
         // --- LOG IN LOGIC ---
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
+        
+        // TRAP 1: Email Verification
+        if (!data.session) {
+          throw new Error("Please verify your email address before logging in.");
+        }
+
+        authUserId = data.user?.id;
       }
 
-      // If we reach here, Supabase has successfully set the browser cookies!
-      window.location.href = "/dashboard";
+      // TRAP 2: The Missing Profile Trap
+      // Let's check if the Dashboard is going to reject them before we even send them there!
+      if (authUserId) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("id")
+          .eq("id", authUserId)
+          .maybeSingle();
+
+        // If the profile doesn't exist, the dashboard will bounce them. Let's create it right now!
+        if (!profile) {
+          toast.info("Rescuing missing profile...");
+          const { error: insertError } = await supabase.from("users").insert({
+            id: authUserId,
+            username: username ? username.toLowerCase().replace(/\s+/g, "") : email.split('@')[0],
+            wallet_balance: 0,
+            ball_iq_points: 0
+          });
+          
+          if (insertError) {
+            console.error(insertError);
+            throw new Error("Failed to initialize your vault. Please contact support.");
+          }
+        }
+      }
+
+      toast.success("Authentication successful! Entering Arena...");
+
+      // Give the browser 500ms to properly save the Supabase cookie before reloading
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 500);
       
     } catch (error: any) {
-      setErrorMsg(error.message || "Authentication failed. Please try again.");
+      setErrorMsg(error.message || "Authentication failed.");
       setIsLoading(false);
     }
   };
@@ -82,10 +122,8 @@ function AuthForm() {
         </p>
       </div>
 
-      {/* Main Glassmorphism Card */}
       <div className="bg-neutral-900/60 backdrop-blur-2xl border border-white/5 rounded-[2rem] p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
         
-        {/* Sleek Toggle Switch */}
         <div className="flex bg-neutral-950/50 p-1 rounded-2xl mb-8 border border-white/5">
           <button
             type="button"
@@ -103,17 +141,8 @@ function AuthForm() {
           </button>
         </div>
 
-        {/* Referral Banner */}
-        {isSignUp && refCode && (
-          <div className="mb-6 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-in slide-in-from-top-2">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-            You've been invited to join a private network.
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp && refCode && <input type="hidden" name="refCode" value={refCode} />}
-
+          
           {errorMsg && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold p-4 rounded-2xl flex items-start gap-3">
               <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -191,33 +220,19 @@ function AuthForm() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.965 11.965 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-          Funds secured by atomic escrow
-        </div>
       </div>
     </div>
   );
 }
 
-// 3. We wrap the form in a Suspense boundary for Next.js App Router compatibility
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-green-500/30">
-      
-      {/* Animated Ambient Background Glows */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/10 blur-[120px] rounded-full pointer-events-none animate-pulse duration-1000" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/4 translate-y-1/4 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none animate-pulse duration-1000" style={{ animationDelay: '1s' }} />
-      
-      {/* Subtle Grid Pattern for that tech/crypto feel */}
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-5 pointer-events-none" />
 
-      <Suspense fallback={
-        <div className="flex flex-col items-center gap-4 z-10">
-          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
-          <div className="text-green-500 font-black tracking-widest text-sm uppercase">Loading Arena...</div>
-        </div>
-      }>
+      <Suspense fallback={<div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin z-10" />}>
         <AuthForm />
       </Suspense>
     </div>
