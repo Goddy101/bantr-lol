@@ -27,6 +27,18 @@ export default function RumbleClientUI({ rumble, participants, currentUserId, ha
   const [liveParticipants, setLiveParticipants] = useState(participants);
 
   // Subscribe to real-time Rumble updates
+  // useEffect(() => {
+  //   const supabase = createClient();
+  //   const channel = supabase
+  //     .channel(`rumble-${rumble.id}`)
+  //     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rumble_pools', filter: `id=eq.${rumble.id}` }, (payload: any) => {
+  //         if (payload.new && payload.new.total_pot !== undefined) setLivePot(payload.new.total_pot);
+  //     })
+  //     .subscribe();
+  //   return () => { supabase.removeChannel(channel); };
+  // }, [rumble.id]);
+
+  // Subscribe to real-time Rumble updates
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -34,9 +46,15 @@ export default function RumbleClientUI({ rumble, participants, currentUserId, ha
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rumble_pools', filter: `id=eq.${rumble.id}` }, (payload: any) => {
           if (payload.new && payload.new.total_pot !== undefined) setLivePot(payload.new.total_pot);
       })
+      // Listen for new fighters joining the arena!
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rumble_participants', filter: `rumble_id=eq.${rumble.id}` }, () => {
+          // The easiest way to get the new avatar and username in Next.js is just to refresh the server state
+          router.refresh(); 
+      })
       .subscribe();
+      
     return () => { supabase.removeChannel(channel); };
-  }, [rumble.id]);
+  }, [rumble.id, router]);
 
   const handleShare = async () => {
     const shareUrl = window.location.href;

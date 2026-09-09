@@ -20,19 +20,11 @@ interface PartnerHubClientProps {
 export default function PartnerHubClient({ adminStats, recentActivity }: PartnerHubClientProps) {
   const router = useRouter();
   const [isCopied, setIsCopied] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`https://${adminStats.referralCode}`);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const handleWithdraw = async () => {
-    setIsWithdrawing(true);
-    // TODO: In the future, wire this to a Supabase RPC function that moves commission to wallet_balance
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    router.push("/dashboard?success=commission_withdrawn");
   };
 
   // --- DYNAMIC GREED ENGINE LOGIC ---
@@ -177,16 +169,17 @@ export default function PartnerHubClient({ adminStats, recentActivity }: Partner
           </div>
         </section>
 
-        {/* Action Bar */}
+        {/* UPDATED Action Bar */}
         <div className="pt-4 pb-8">
           <button
-            onClick={handleWithdraw}
-            disabled={isWithdrawing || adminStats.commissionEarned < 1000}
-            className="w-full bg-white text-black font-black text-lg py-4 rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-50 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+            onClick={() => router.push('/dashboard')}
+            className="w-full bg-white text-black font-black text-lg py-4 rounded-xl hover:bg-neutral-200 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
           >
-            {isWithdrawing ? "Processing..." : `Withdraw ₦${adminStats.commissionEarned.toLocaleString()} to Main Wallet`}
+            CASHOUT EARNINGS FROM VAULT
           </button>
-          <p className="text-center text-xs text-neutral-600 mt-3 font-bold uppercase tracking-widest">Minimum withdrawal: ₦1,000</p>
+          <p className="text-center text-xs text-neutral-500 mt-3 font-bold uppercase tracking-widest">
+            Commissions are auto-deposited into your vault in real-time.
+          </p>
         </div>
 
       </div>

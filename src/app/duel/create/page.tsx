@@ -45,7 +45,7 @@ export default function CreateDuelPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const activeMatch = fixtures.find((m) => m.id === selectedMatchId);
-  const potentialPayout = stake * 1.9; // Platform takes 10%, winner gets 1.9x
+  const potentialPayout = stake * 1.8; // Platform takes 10%, winner gets 1.8x
 
   const handleCreate = async () => {
     if (!selectedMatchId || !prediction || !stake) return;

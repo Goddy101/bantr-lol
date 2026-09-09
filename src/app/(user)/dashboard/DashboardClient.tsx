@@ -8,7 +8,7 @@ import WithdrawModal from "@/components/shared/WithdrawModal";
 import DepositModal from "@/components/shared/DepositModal";
 import ShareReceiptButton from "@/components/shared/ShareReceiptButton";
 import AffiliateCard from "@/components/shared/AffiliateCard";
-import SponsorCard from "@/components/shared/SponsorCard"; // <-- Added SponsorCard import
+import SponsorCard from "@/components/shared/SponsorCard"; 
 import { createClient } from "@/lib/supabase/client";
 
 interface DashboardClientProps {
@@ -16,6 +16,7 @@ interface DashboardClientProps {
     id: string;
     username: string;
     walletBalance: number;
+    unwageredBalance: number; // <-- NEW: Added this prop
     ballIqPoints: number;
     rank: string;
     isPartner?: boolean;
@@ -23,7 +24,7 @@ interface DashboardClientProps {
   activeDuels: any[];
   pastDuels: any[];
   dailyRoast: string; 
-  sponsor?: any; // <-- Added sponsor prop
+  sponsor?: any; 
 }
 
 export default function DashboardClient({ userData, activeDuels, pastDuels, dailyRoast, sponsor }: DashboardClientProps) {
@@ -31,17 +32,23 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  // Realtime state
+  // --- Realtime State ---
   const [balance, setBalance] = useState<number>(userData.walletBalance);
+  const [unwageredBalance, setUnwageredBalance] = useState<number>(userData.unwageredBalance || 0);
   const [ballIq, setBallIq] = useState<number>(userData.ballIqPoints);
 
-  // Modals State
+  // --- Modals & UI State ---
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [showPlaythroughInfo, setShowPlaythroughInfo] = useState(false); // Tooltip toggle
 
   // Progressive Loading State
   const [visibleActive, setVisibleActive] = useState(3);
   const [visibleHistory, setVisibleHistory] = useState(5);
+
+  // --- Math for the UI ---
+  const withdrawable = Math.max(0, balance - unwageredBalance);
+  const locked = unwageredBalance;
 
   useEffect(() => {
     const supabase = createClient();
@@ -53,6 +60,8 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
         (payload: any) => {
           if (payload.new) {
             if (payload.new.wallet_balance !== undefined) setBalance(payload.new.wallet_balance);
+            // Listen for changes to the locked balance too!
+            if (payload.new.unwagered_balance !== undefined) setUnwageredBalance(payload.new.unwagered_balance);
             if (payload.new.ball_iq_points !== undefined) setBallIq(payload.new.ball_iq_points);
           }
         }
@@ -70,8 +79,8 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // --- ZERO BALANCE GUARD ---
   const handleCreateDuel = () => {
+    // We check against `balance` (Total Balance) here because they CAN wager locked funds
     if (balance < 500) {
       toast.error("Insufficient funds. Fund your vault to place a stake!");
       setIsDepositOpen(true); 
@@ -130,10 +139,11 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
           <p className="text-xs font-medium text-red-200/80 truncate italic">"{dailyRoast}"</p>
         </div>
 
-        {/* The Vault Card */}
+        {/* --- THE VAULT CARD (Updated with Playthrough Logic) --- */}
         <div className="bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all duration-500" />
-          <div className="flex justify-between items-start mb-8 relative z-10">
+          
+          <div className="flex justify-between items-start mb-6 relative z-10">
             <div>
               <div className="text-[11px] text-neutral-400 font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -149,6 +159,38 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
             </div>
           </div>
 
+          {/* Breakdown Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6 relative z-10">
+            {/* Withdrawable */}
+            <div className="bg-neutral-950/50 border border-neutral-800/80 rounded-2xl p-3 sm:p-4 text-left shadow-inner">
+              <div className="text-[10px] font-bold text-green-500/80 uppercase tracking-widest mb-1">Withdrawable</div>
+              <div className="text-lg sm:text-xl font-black text-green-400">₦{withdrawable.toLocaleString()}</div>
+            </div>
+
+            {/* Unplayed / Locked */}
+            <div 
+              onClick={() => setShowPlaythroughInfo(!showPlaythroughInfo)}
+              className="bg-neutral-950/50 border border-neutral-800/80 rounded-2xl p-3 sm:p-4 text-left shadow-inner cursor-pointer hover:border-orange-500/30 hover:bg-neutral-900 transition-all group/tooltip"
+            >
+              <div className="text-[10px] font-bold text-orange-500/80 uppercase tracking-widest mb-1 flex items-center justify-between">
+                Unplayed
+                <span className="w-4 h-4 rounded-full bg-orange-500/10 text-orange-400 flex items-center justify-center text-[10px] font-black group-hover/tooltip:bg-orange-500/20 transition-colors">?</span>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-orange-400">₦{locked.toLocaleString()}</div>
+            </div>
+          </div>
+
+          {/* Playthrough Explainer Box */}
+          {showPlaythroughInfo && (
+            <div className="mb-6 bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 animate-in slide-in-from-top-2 duration-200 relative z-10">
+              <h4 className="text-xs font-black text-orange-400 mb-1 uppercase tracking-wider">The 1x Playthrough Rule</h4>
+              <p className="text-[11px] sm:text-xs font-medium text-orange-200/80 leading-relaxed">
+                Deposits must be played in a duel or rumble at least once before withdrawing to prevent fraud. <strong className="text-white">Your winnings are always instantly withdrawable!</strong>
+              </p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
           <div className="flex gap-3 relative z-10">
             <button onClick={() => setIsDepositOpen(true)} className="flex-1 flex items-center justify-center gap-2 bg-white text-black font-black text-sm py-3.5 rounded-xl hover:bg-neutral-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-[0.98]">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
@@ -291,7 +333,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
                         loser={duel.opponent || "Unknown"}
                         amount={duel.payout || 0}
                         match={duel.match}
-                        sponsor={sponsor} //
+                        sponsor={sponsor}
                       />
                     </div>
                   )}
@@ -338,7 +380,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
 
       </div>
 
-      {/* Floating Action Button (Updated with Zero Balance Guard) */}
+      {/* Floating Action Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-neutral-950 via-neutral-950/90 to-transparent z-40">
         <div className="w-full max-w-lg mx-auto block">
           <button 
@@ -351,15 +393,16 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
         </div>
 
         <Link href="/rumble/create" className="w-full mt-2 block">
-  <button className="w-full flex items-center justify-center gap-2 bg-neutral-900 text-yellow-500 border border-yellow-500/20 font-black text-[15px] tracking-wide py-4 rounded-xl hover:bg-neutral-800 transition-all shadow-[0_0_20px_rgba(250,204,21,0.1)] active:scale-[0.98]">
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-    HOST MULTIPLAYER RUMBLE
-  </button>
-</Link>
+          <button className="w-full flex items-center justify-center gap-2 bg-neutral-900 text-yellow-500 border border-yellow-500/20 font-black text-[15px] tracking-wide py-4 rounded-xl hover:bg-neutral-800 transition-all shadow-[0_0_20px_rgba(250,204,21,0.1)] active:scale-[0.98]">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            HOST MULTIPLAYER RUMBLE
+          </button>
+        </Link>
       </div>
 
       <DepositModal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} />
-      <WithdrawModal isOpen={isWithdrawOpen} onClose={() => setIsWithdrawOpen(false)} maxBalance={balance} />
+      {/* PASSING WITHDRAWABLE AS MAX BALANCE TO WITHDRAWAL MODAL */}
+      <WithdrawModal isOpen={isWithdrawOpen} onClose={() => setIsWithdrawOpen(false)} maxBalance={withdrawable} />
     </div>
   );
 }

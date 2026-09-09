@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import JackpotCountdown from "./JackpotCountdown"; // <-- Import the new component
 
 export const dynamic = "force-dynamic"; 
 export const revalidate = 60; // Cache for 60 seconds
@@ -17,7 +18,7 @@ export default async function LeaderboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch the top 50 users ordered by Ball IQ Points
+  // 1. Fetch the Top 50 Users by Ball IQ Points
   const { data: topUsers } = await supabase
     .from("users")
     .select("id, username, ball_iq_points")
@@ -25,6 +26,19 @@ export default async function LeaderboardPage() {
     .limit(50);
 
   const players = topUsers || [];
+
+  // 2. Fetch the Active Weekly Jackpot Pool
+  const { data: jackpot } = await supabase
+    .from("jackpot_pool")
+    .select("total_amount, week_end")
+    .eq("status", "accumulating")
+    .maybeSingle();
+
+  // Fallback in case a week hasn't been generated yet
+  const activeJackpot = jackpot || {
+    total_amount: 0,
+    week_end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white font-sans selection:bg-green-500/30 pb-20 overflow-x-hidden">
@@ -48,6 +62,12 @@ export default async function LeaderboardPage() {
 
       <div className="max-w-lg mx-auto p-4 mt-2 relative z-10 space-y-6">
         
+        {/* --- 🚨 INJECT THE LIVE JACKPOT HERE --- */}
+        <JackpotCountdown 
+          amount={activeJackpot.total_amount} 
+          weekEnd={activeJackpot.week_end} 
+        />
+
         <div className="text-center mb-8">
           <p className="text-neutral-400 text-sm font-medium">Win duels to steal points. Lose duels, lose your respect.</p>
         </div>

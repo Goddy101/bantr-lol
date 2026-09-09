@@ -200,7 +200,12 @@ export default function CreateRumblePage() {
                   required
                 />
               </div>
-              <p className="text-[10px] font-bold text-neutral-500 text-right pr-1">Minimum: ₦500</p>
+            <div className="flex justify-between items-center pr-1 mt-1">
+  <p className="text-[10px] font-bold text-neutral-500">
+    <span className="text-yellow-500">🏆</span> Winner takes 90% of total pot
+  </p>
+  <p className="text-[10px] font-bold text-neutral-500">Min: ₦500</p>
+</div>
             </div>
 
             {/* 4. SUBMIT */}

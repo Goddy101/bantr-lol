@@ -39,15 +39,17 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
       const data = await res.json();
 
-      if (data.checkoutUrl) {
-        // Teleport the user to the payment gateway
-        window.location.href = data.checkoutUrl;
+      // 🚨 UPDATED: Checking for data.url to match our Bachs backend route
+      if (data.success && data.url) {
+        // Teleport the user to the secure Bachs checkout gateway
+        window.location.href = data.url;
       } else {
         alert(data.error || "Failed to initialize payment");
         setIsLoading(false);
       }
     } catch (error) {
       console.error("Deposit error", error);
+      alert("Network error. Please try again.");
       setIsLoading(false);
     }
   };
@@ -106,7 +108,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             disabled={isLoading || !amount || Number(amount) < 500}
             className="w-full bg-white text-black font-black text-lg py-4 rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-50 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
           >
-            {isLoading ? "Connecting to Bank..." : `Deposit ₦${Number(amount || 0).toLocaleString()}`}
+            {isLoading ? "Initializing Checkout..." : `Deposit ₦${Number(amount || 0).toLocaleString()}`}
           </button>
         </div>
       </div>

@@ -13,10 +13,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // 2. Fetch their profile data safely (REMOVED is_partner so it doesn't crash)
+  // 2. Fetch their profile data safely (NOW INCLUDES is_partner)
   let { data: profile } = await supabase
     .from("users")
-    .select("username, wallet_balance, ball_iq_points")
+    .select("username, wallet_balance, unwagered_balance, ball_iq_points, is_partner")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -34,10 +34,11 @@ export default async function DashboardPage() {
         id: user.id,
         username: safeUsername,
         wallet_balance: 0,
-        ball_iq_points: 0
-        // 🚨 REMOVED is_partner from the insert to prevent the crash!
+        unwagered_balance: 0, 
+        ball_iq_points: 0,
+        is_partner: false // Defaults to false for brand new users
       })
-      .select("username, wallet_balance, ball_iq_points")
+      .select("username, wallet_balance, unwagered_balance, ball_iq_points, is_partner")
       .single();
 
     if (insertError) {
@@ -54,9 +55,10 @@ export default async function DashboardPage() {
     id: user.id, 
     username: profile.username || "Unknown",
     walletBalance: profile.wallet_balance || 0,
+    unwageredBalance: profile.unwagered_balance || 0,
     ballIqPoints: profile.ball_iq_points || 0,
-    // Safely default to false in Javascript without relying on the database
-    isPartner: false,
+    // 🚨 FETCHED FROM DATABASE NOW
+    isPartner: profile.is_partner || false,
     rank: (profile.ball_iq_points || 0) > 500 ? "Odogwu" : "Rookie", 
   };
 
