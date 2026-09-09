@@ -19,18 +19,21 @@ export default async function AdminDisputesPage() {
 
   if (!profile || !profile.is_admin) redirect("/");
 
-  // 2. FETCH DISPUTED MATCHES
-  const { data: disputedMatches, error } = await supabaseAdmin
-    .from("matches")
+  // 2. FETCH DISPUTED DUELS (Using your exact schema column names)
+  // Note: We check for 'active' or whatever status you use when users disagree.
+  // Assuming 'active' is the disputed state, or add 'disputed' to your CHECK constraint later.
+  const { data: disputedDuels, error } = await supabaseAdmin
+    .from("duels")
     .select(`
       id,
       stake_amount,
       status,
       created_at,
+      match_id,
       creator:creator_id ( id, username ),
-      joiner:joiner_id ( id, username )
+      acceptor:acceptor_id ( id, username ) 
     `)
-    .eq("status", "disputed")
+    .eq("status", "active") // Adjust this if you add a specific 'disputed' status to your schema
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -42,10 +45,11 @@ export default async function AdminDisputesPage() {
       <div className="max-w-6xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Dispute Resolution</h1>
-          <p className="text-neutral-500 font-bold mt-1">Review flagged matches and release escrowed funds.</p>
+          <p className="text-neutral-500 font-bold mt-1">Review flagged duels and release escrowed funds.</p>
         </div>
 
-        <AdminDisputesClient initialMatches={disputedMatches || []} />
+        {/* Pass the data to your client component */}
+        <AdminDisputesClient initialMatches={disputedDuels || []} />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+// src/app/admin/disputes/AdminDisputesClient.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,7 +11,7 @@ export default function AdminDisputesClient({ initialMatches }: { initialMatches
   const handleResolution = async (matchId: string, action: "award" | "refund", winnerId?: string) => {
     const confirmMessage = action === "award" 
       ? "Are you sure you want to award the pot to this player?" 
-      : "Are you sure you want to void this match and refund both players?";
+      : "Are you sure you want to void this duel and refund both players?";
       
     if (!confirm(confirmMessage)) return;
 
@@ -24,7 +25,7 @@ export default function AdminDisputesClient({ initialMatches }: { initialMatches
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Match successfully ${action === "award" ? "awarded" : "refunded"}.`);
+        toast.success(`Duel successfully ${action === "award" ? "awarded" : "refunded"}.`);
         setMatches((prev) => prev.filter((m) => m.id !== matchId));
       } else {
         toast.error(data.error || "Resolution failed.");
@@ -57,14 +58,17 @@ export default function AdminDisputesClient({ initialMatches }: { initialMatches
                 Action Required
               </span>
               <span className="text-neutral-500 text-xs font-bold">
-                Match ID: {match.id.split('-')[0]}...
+                Duel ID: {match.id.split('-')[0]}...
               </span>
             </div>
             <div className="text-xl font-black text-white">
-              @{match.creator?.username} <span className="text-neutral-600 font-normal">vs</span> @{match.joiner?.username}
+              @{match.creator?.username} <span className="text-neutral-600 font-normal">vs</span> @{match.acceptor?.username}
             </div>
             <div className="text-yellow-500 font-bold mt-1">
               Stake: ₦{match.stake_amount.toLocaleString()} (Pot: ₦{(match.stake_amount * 2).toLocaleString()})
+            </div>
+            <div className="text-neutral-500 text-xs mt-1">
+              Game ID: {match.match_id}
             </div>
           </div>
 
@@ -78,13 +82,16 @@ export default function AdminDisputesClient({ initialMatches }: { initialMatches
               🏆 Award @{match.creator?.username}
             </button>
 
-            <button
-              onClick={() => handleResolution(match.id, "award", match.joiner.id)}
-              disabled={processingId === match.id}
-              className="bg-neutral-800 hover:bg-white hover:text-black text-white font-bold px-4 py-3 rounded-xl transition-all text-sm disabled:opacity-50"
-            >
-              🏆 Award @{match.joiner?.username}
-            </button>
+            {/* Render the Acceptor button ONLY if an acceptor exists */}
+            {match.acceptor && (
+              <button
+                onClick={() => handleResolution(match.id, "award", match.acceptor.id)}
+                disabled={processingId === match.id}
+                className="bg-neutral-800 hover:bg-white hover:text-black text-white font-bold px-4 py-3 rounded-xl transition-all text-sm disabled:opacity-50"
+              >
+                🏆 Award @{match.acceptor?.username}
+              </button>
+            )}
 
             <button
               onClick={() => handleResolution(match.id, "refund")}

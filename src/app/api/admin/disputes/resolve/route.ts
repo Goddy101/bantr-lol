@@ -34,11 +34,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'A winnerId is required to award the pot.' }, { status: 400 });
     }
 
-    // 4. EXECUTE THE ATOMIC SQL RPC
+    // 4. EXECUTE THE ATOMIC SQL RPC (Passing p_duel_id to match our database function)
     const { data, error: rpcError } = await supabaseAdmin.rpc('admin_resolve_dispute', {
-      p_match_id: matchId,
+      p_duel_id: matchId, // Maps the frontend matchId to the SQL parameter p_duel_id
       p_action: action,
-      p_winner_id: winnerId || null // Pass null if refunding
+      p_winner_id: winnerId || null 
     });
 
     if (rpcError) {
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     // 5. SUCCESS
     return NextResponse.json({ 
       success: true, 
-      message: data?.message || 'Dispute resolved successfully.' 
+      message: data?.message || 'Duel resolved successfully.' 
     });
 
   } catch (error: any) {
