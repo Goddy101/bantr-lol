@@ -19,7 +19,8 @@ export async function POST(req: Request) {
     }
 
     // 1. THE FIX: Parse the ISO 8601 string into a Date object to get the Unix timestamp
-    const eventTime = Math.floor(new Date(timestampHeader).getTime() / 1000);
+   // const eventTime = Math.floor(new Date(timestampHeader).getTime() / 1000);
+    const eventTime = parseInt(timestampHeader, 10);
     const currentTime = Math.floor(Date.now() / 1000);
     
     // Validate that the webhook isn't older than 5 minutes (300 seconds)
