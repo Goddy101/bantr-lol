@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       ? "https://api.bachs.io"
       : "https://sandbox-api.bachs.io";
 
+    // Format money strictly as a decimal string (e.g. "1000.00")
     const formattedAmount = Number(amount).toFixed(2);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantr.lol";
 
@@ -34,15 +35,17 @@ export async function POST(req: Request) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        amount: formattedAmount,
-        currency: "NGN",
         
-        // 🚨 ADD THIS REQUIRED CUSTOMER FIELD 🚨
+        // 🚨 THE FIX: Use the Bachs 'pricing' object for ad-hoc amounts
+        pricing: {
+          amount: formattedAmount,
+          currency: "NGN"
+        },
+        
         customer: {
-          email: user.email || "no-reply@bantr.lol", // Provide fallback just in case
+          email: user.email || "no-reply@bantr.lol",
           name: user.user_metadata?.username || "Bantr Player"
         },
-
         metadata: {
           user_id: user.id 
         },
@@ -59,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json();
-    return NextResponse.json({ success: true, url: data.url }); 
+    return NextResponse.json({ success: true, url: data.checkout_url }); // Note: I also updated this to match their spec's 'checkout_url' return field!
 
   } catch (error: any) {
     console.error("Deposit initialization error:", error);
