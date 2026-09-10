@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin"; 
 import DashboardClient from "./DashboardClient";
 import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -94,6 +95,9 @@ export default async function DashboardPage() {
     .select("*")
     .eq("is_active", true)
     .maybeSingle();
+
+
+  console.log("SERVER DB CHECK:", profile.wallet_balance);  
 
   return (
     <DashboardClient 
