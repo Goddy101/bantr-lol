@@ -49,7 +49,9 @@ export async function POST(req: Request) {
     // ---------------------------------------------------------
     // if (event.type === 'collection.succeeded') {
 
-    if (event.type === 'collection.succeeded' || event.type === 'checkout.session.completed') {
+   // if (event.type === 'collection.succeeded' || event.type === 'checkout.session.completed') {
+    if (event.type === 'checkout.completed' || event.type === 'collection.succeeded') {  
+
       // Bachs uses exact decimal strings (e.g., "50000.00"). parseFloat handles this perfectly.
       const amount = Math.floor(parseFloat(data.amount || '0'));
       const reference = data.reference || data.checkout_id || event.id;
