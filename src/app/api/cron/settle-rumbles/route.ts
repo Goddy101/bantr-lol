@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { SettlementService } from '@/services/settlement.service';
 
 export async function GET(req: Request) {
   try {
@@ -101,13 +102,28 @@ export async function GET(req: Request) {
             winnerId = duel.acceptor_id; 
           }
 
+          // if (winnerId) {
+          //   // WE HAVE A WINNER: Use the ultimate settle function!
+          //   dbOperations.push(
+          //     supabaseAdmin.rpc('settle_duel', { p_duel_id: duel.id, p_winner_id: winnerId })
+          //   );
+          //   resolvedCount++;
+
+
+          // if (winnerId) {
+          //   // WE HAVE A WINNER: Use the ultimate settle function!
+          //   dbOperations.push(
+          //     supabaseAdmin.rpc('settle_duel', { p_duel_id: duel.id, p_match_result: actualResult })
+          //   );
+          //   resolvedCount++;
+          // }
+
           if (winnerId) {
-            // WE HAVE A WINNER: Use the ultimate settle function!
-            dbOperations.push(
-              supabaseAdmin.rpc('settle_duel', { p_duel_id: duel.id, p_winner_id: winnerId })
-            );
-            resolvedCount++;
-          } else {
+  // Use the advanced Settlement Service to handle the Jackpot/Admin splits!
+  dbOperations.push(SettlementService.settleDuel(duel.id, winnerId));
+  resolvedCount++;
+}
+           else {
             // NO WINNER (e.g. Draw): Refund both players cleanly
             dbOperations.push(supabaseAdmin.rpc('refund_duel', { p_duel_id: duel.id }));
             refundedCount++;

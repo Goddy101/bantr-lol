@@ -11,6 +11,15 @@ export default async function LobbyPage() {
 
   // 2. Fetch all open duels and JOIN the users table to get the creator's username
   // We use the exact foreign key name from your schema to ensure the join works perfectly
+  // const { data: openDuels, error: dbError } = await supabase
+  //   .from('duels')
+  //   .select(`
+  //     *,
+  //     creator:users!duels_creator_id_fkey(username, ball_iq_points)
+  //   `)
+  //   .eq('status', 'open')
+  //   .order('created_at', { ascending: false });
+
   const { data: openDuels, error: dbError } = await supabase
     .from('duels')
     .select(`
@@ -18,40 +27,45 @@ export default async function LobbyPage() {
       creator:users!duels_creator_id_fkey(username, ball_iq_points)
     `)
     .eq('status', 'open')
+    .neq('creator_id', user?.id || '00000000-0000-0000-0000-000000000000')
     .order('created_at', { ascending: false });
 
-  // Filter out duels created by the current user
-  const availableDuels = openDuels?.filter((d: any) => d.creator_id !== user?.id) || [];
+  if (dbError) {
+    console.error('Failed to fetch open duels', dbError);
+  }
 
-  // 3. Fetch live matches from Football-Data so we can translate match_ids into Team Names
   let fixtures: any[] = [];
   try {
-    const apiResponse = await fetch(`https://api.football-data.org/v4/competitions/PL/matches?status=SCHEDULED`, {
+    const apiResponse = await fetch(`https://api.football-data.org/v4/matches?status=SCHEDULED`, {
       headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY || '' },
       next: { revalidate: 60 }
     });
+
     if (apiResponse.ok) {
       const apiData = await apiResponse.json();
       fixtures = apiData.matches || [];
     }
   } catch (error) {
-    console.error("Failed to fetch fixtures for lobby mapping");
+    console.error('Failed to fetch fixtures for lobby mapping', error);
   }
 
-  // 4. Map the database duels to the real-world match data
-  const mappedDuels = availableDuels.map((duel: any) => {
-    // Find the match in the API response using the ID
+  const mappedDuels = (openDuels || []).map((duel: any) => {
     const match = fixtures.find((m: any) => m.id.toString() === duel.match_id);
-    
+
     return {
       ...duel,
       homeTeam: match?.homeTeam?.shortName || match?.homeTeam?.name || 'Home Team',
       awayTeam: match?.awayTeam?.shortName || match?.awayTeam?.name || 'Away Team',
       homeLogo: match?.homeTeam?.crest || '',
       awayLogo: match?.awayTeam?.crest || '',
-      time: match?.utcDate ? new Intl.DateTimeFormat('en-NG', {
-        weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: true
-      }).format(new Date(match.utcDate)) : 'Upcoming'
+      time: match?.utcDate
+        ? new Intl.DateTimeFormat('en-NG', {
+            weekday: 'short',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+          }).format(new Date(match.utcDate))
+        : 'Upcoming'
     };
   });
 

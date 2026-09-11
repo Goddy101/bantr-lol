@@ -41,22 +41,37 @@ export async function GET(req: Request) {
       const duelsToSettle = activeDuels.filter(d => d.match_id === matchId);
 
       // 5. Process payouts for everyone
+      // for (const duel of duelsToSettle) {
+      //   let winnerId = null;
+
+      //   // Determine who won based on the real-life result ('home', 'away', or 'draw')
+      //   if (duel.prediction_creator === matchResult.winning_prediction) {
+      //     winnerId = duel.creator_id;
+      //   } else if (duel.prediction_acceptor === matchResult.winning_prediction) {
+      //     winnerId = duel.acceptor_id;
+      //   }
+
+      //   // Execute the atomic settlement we wrote in settlement.service.ts
+      //   if (winnerId) {
+      //     await SettlementService.settleDuel(duel.id, winnerId);
+      //   } else {
+      //     // Edge Case: If somehow neither won (or it was cancelled), implement a refund logic
+      //     // await SettlementService.refundDuel(duel.id);
+      //   }
+      // }
+
+
+      // 5. Process payouts for everyone using the atomic RPC
       for (const duel of duelsToSettle) {
-        let winnerId = null;
+        const { error: rpcError } = await supabaseAdmin.rpc('settle_duel', {
+          p_duel_id: duel.id,
+          p_match_result: matchResult.winning_prediction 
+        });
 
-        // Determine who won based on the real-life result ('home', 'away', or 'draw')
-        if (duel.prediction_creator === matchResult.winning_prediction) {
-          winnerId = duel.creator_id;
-        } else if (duel.prediction_acceptor === matchResult.winning_prediction) {
-          winnerId = duel.acceptor_id;
-        }
-
-        // Execute the atomic settlement we wrote in settlement.service.ts
-        if (winnerId) {
-          await SettlementService.settleDuel(duel.id, winnerId);
+        if (rpcError) {
+          console.error(`❌ Failed to settle duel ${duel.id}:`, rpcError.message);
         } else {
-          // Edge Case: If somehow neither won (or it was cancelled), implement a refund logic
-          // await SettlementService.refundDuel(duel.id);
+          console.log(`✅ Settled duel ${duel.id} with result: ${matchResult.winning_prediction}`);
         }
       }
     }
