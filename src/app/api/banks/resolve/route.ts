@@ -21,10 +21,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // // Determine sandbox vs production dynamically from the key prefix
+    // const baseUrl = apiKey.startsWith("sk_live_")
+    //   ? "https://api.bachs.io"
+    //   : "https://sandbox-api.bachs.io";
+
+
     // Determine sandbox vs production dynamically from the key prefix
-    const baseUrl = apiKey.startsWith("sk_live_")
-      ? "https://api.bachs.io"
-      : "https://sandbox-api.bachs.io";
+    const isSandbox = apiKey.startsWith("sk_sandbox_");
+    const baseUrl = isSandbox
+      ? "https://sandbox-api.bachs.io"
+      : "https://api.bachs.io";
 
     // 1. Send resolution request to Bachs
     const res = await fetch(`${baseUrl}/v1/misc/bank-accounts/resolve`, {
