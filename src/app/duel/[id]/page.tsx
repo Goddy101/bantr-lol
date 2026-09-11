@@ -8,27 +8,23 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// 1. THE VIRAL META TAG ENGINE
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createClient();
 
-  // FIX: Using explicit foreign key names
-  const { data: duel } = await supabase
-    .from("duels")
-    .select("stake_amount, creator:users!duels_creator_id_fkey(username)")
-    .eq("id", id)
-    .single();
+  // 1. Fetch just the duel first (No relationships)
+  const { data: duel } = await supabase.from("duels").select("*").eq("id", id).single();
 
   if (!duel) return { title: "Duel Not Found | bantr.lol" };
 
-  const creatorUsername = Array.isArray(duel.creator) 
-    ? duel.creator[0]?.username 
-    : (duel.creator as any)?.username;
+  // 2. Fetch the creator separately
+  let safeUsername = "A challenger";
+  if (duel.creator_id) {
+    const { data: creator } = await supabase.from("users").select("username").eq("id", duel.creator_id).single();
+    if (creator?.username) safeUsername = creator.username;
+  }
 
-  const safeUsername = creatorUsername || "A challenger";
   const safeStake = (duel.stake_amount || 0).toLocaleString();
-
   const title = `🚨 @${safeUsername} just dropped ₦${safeStake} on the table.`;
   const description = `Think they're wrong? Match the ₦${safeStake} stake in escrow and prove it.`;
 
@@ -40,21 +36,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-// 2. THE SERVER-RENDERED PAGE UI
 export default async function DuelPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
 
-  // FIX: Using explicit foreign key names so Supabase doesn't panic
+  // 1. Fetch ONLY the duel. This is bulletproof.
   const { data: duel, error: fetchError } = await supabase
     .from("duels")
-    .select(`
-      *,
-      creator:users!duels_creator_id_fkey(username),
-      acceptor:users!duels_acceptor_id_fkey(username)
-    `)
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -63,7 +54,21 @@ export default async function DuelPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch real fixture data from football-data.org since duel.match was null in your DB
+  // 2. Fetch Creator Username separately
+  let creatorUsername = "Unknown";
+  if (duel.creator_id) {
+    const { data: creator } = await supabase.from("users").select("username").eq("id", duel.creator_id).single();
+    if (creator?.username) creatorUsername = creator.username;
+  }
+
+  // 3. Fetch Acceptor Username separately
+  let acceptorUsername = "Unknown";
+  if (duel.acceptor_id) {
+    const { data: acceptor } = await supabase.from("users").select("username").eq("id", duel.acceptor_id).single();
+    if (acceptor?.username) acceptorUsername = acceptor.username;
+  }
+
+  // 4. Fetch Match Data
   let matchName = "Live Match";
   if (duel.match_id) {
     try {
@@ -78,21 +83,14 @@ export default async function DuelPage({ params }: PageProps) {
     } catch (err) {}
   }
 
-  // Determine State
   const isCreator = user?.id === duel.creator_id;
   const isAccepted = duel.status === 'active' || duel.status === 'settled';
-
   const stake = duel.stake_amount || 0;
   const creatorPrediction = duel.prediction_creator || "Unknown";
-  // The acceptor picks whatever is opposite (if creator picks home, acceptor usually takes away or draw)
   const acceptorPrediction = duel.prediction_acceptor || (creatorPrediction === 'home' ? 'away' : 'home');
-  
-  const creatorUsername = Array.isArray(duel.creator) ? duel.creator[0]?.username : (duel.creator as any)?.username;
-  const acceptorUsername = Array.isArray(duel.acceptor) ? duel.acceptor[0]?.username : (duel.acceptor as any)?.username;
 
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-green-500/30">
-      
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] blur-[150px] rounded-full pointer-events-none ${isAccepted ? 'bg-indigo-500/10' : 'bg-green-500/10'}`} />
 
       <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
@@ -122,7 +120,7 @@ export default async function DuelPage({ params }: PageProps) {
 
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
               <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-1">Challenger</div>
-              <div className="font-black text-lg text-white mb-1 truncate w-full">@{creatorUsername || "Unknown"}</div>
+              <div className="font-black text-lg text-white mb-1 truncate w-full">@{creatorUsername}</div>
               <div className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded uppercase font-bold border border-green-500/20 inline-block">
                 Pick: {creatorPrediction}
               </div>
@@ -132,7 +130,7 @@ export default async function DuelPage({ params }: PageProps) {
               <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-1">Opponent</div>
               {isAccepted ? (
                 <>
-                  <div className="font-black text-lg text-white mb-1 truncate w-full">@{acceptorUsername || 'Unknown'}</div>
+                  <div className="font-black text-lg text-white mb-1 truncate w-full">@{acceptorUsername}</div>
                   <div className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded uppercase font-bold border border-indigo-500/20 inline-block">
                     Pick: {acceptorPrediction}
                   </div>
