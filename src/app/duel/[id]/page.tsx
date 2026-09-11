@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import AcceptDuelButton from "@/components/shared/AcceptDuelButton";
+import { supabaseAdmin } from "@/lib/supabase/admin"; // ADD THIS
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -12,15 +13,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const supabase = await createClient();
 
-  // 1. Fetch just the duel first (No relationships)
+  // 1. Fetch just the duel first 
   const { data: duel } = await supabase.from("duels").select("*").eq("id", id).single();
 
   if (!duel) return { title: "Duel Not Found | bantr.lol" };
 
-  // 2. Fetch the creator separately
+  // 2. Fetch the creator separately using supabaseAdmin to bypass RLS!
   let safeUsername = "A challenger";
   if (duel.creator_id) {
-    const { data: creator } = await supabase.from("users").select("username").eq("id", duel.creator_id).single();
+    const { data: creator } = await supabaseAdmin
+      .from("users")
+      .select("username")
+      .eq("id", duel.creator_id)
+      .single();
+      
     if (creator?.username) safeUsername = creator.username;
   }
 
@@ -54,17 +60,40 @@ export default async function DuelPage({ params }: PageProps) {
     notFound();
   }
 
-  // 2. Fetch Creator Username separately
+  // // 2. Fetch Creator Username separately
+  // let creatorUsername = "Unknown";
+  // if (duel.creator_id) {
+  //   const { data: creator } = await supabase.from("users").select("username").eq("id", duel.creator_id).single();
+  //   if (creator?.username) creatorUsername = creator.username;
+  // }
+
+  // // 3. Fetch Acceptor Username separately
+  // let acceptorUsername = "Unknown";
+  // if (duel.acceptor_id) {
+  //   const { data: acceptor } = await supabase.from("users").select("username").eq("id", duel.acceptor_id).single();
+  //   if (acceptor?.username) acceptorUsername = acceptor.username;
+  // }
+
+
+  // 2. Fetch Creator Username separately (Using Admin Client to bypass RLS)
   let creatorUsername = "Unknown";
   if (duel.creator_id) {
-    const { data: creator } = await supabase.from("users").select("username").eq("id", duel.creator_id).single();
+    const { data: creator } = await supabaseAdmin
+      .from("users")
+      .select("username")
+      .eq("id", duel.creator_id)
+      .single();
     if (creator?.username) creatorUsername = creator.username;
   }
 
-  // 3. Fetch Acceptor Username separately
+  // 3. Fetch Acceptor Username separately (Using Admin Client to bypass RLS)
   let acceptorUsername = "Unknown";
   if (duel.acceptor_id) {
-    const { data: acceptor } = await supabase.from("users").select("username").eq("id", duel.acceptor_id).single();
+    const { data: acceptor } = await supabaseAdmin
+      .from("users")
+      .select("username")
+      .eq("id", duel.acceptor_id)
+      .single();
     if (acceptor?.username) acceptorUsername = acceptor.username;
   }
 
