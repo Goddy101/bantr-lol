@@ -104,6 +104,38 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
     <div className="min-h-screen bg-neutral-950 text-white pb-40 font-sans selection:bg-green-500/30">
       
       {/* Top Navbar */}
+
+      {/* Inside DashboardClient.tsx - Top Header Row */}
+<div className="flex items-center gap-4 ml-auto">
+
+  {/* 🔥 THE VIP PARTNER HUB BUTTON (Only shows if they are a partner) */}
+  {userData.isPartner && (
+    <Link 
+      href="/partner" 
+      className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl hover:bg-yellow-500/20 transition-all group"
+    >
+      <svg className="w-4 h-4 text-yellow-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+      <span className="text-xs font-black text-yellow-500 uppercase tracking-widest">
+        VIP Hub
+      </span>
+    </Link>
+  )}
+
+  {/* Your existing Glowing Profile Avatar */}
+  <Link href="/profile" className="flex items-center gap-3 group">
+    <span className="hidden sm:block text-xs font-bold text-neutral-400 group-hover:text-white transition-colors uppercase tracking-widest">
+      My Profile
+    </span>
+    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_10px_rgba(52,211,153,0.1)]">
+      <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center font-black text-white text-sm uppercase">
+        {userData.username.charAt(0)}
+      </div>
+    </div>
+  </Link>
+
+</div>
       <div className="bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-900 px-5 py-4 sticky top-0 z-50 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_15px_rgba(52,211,153,0.15)]">

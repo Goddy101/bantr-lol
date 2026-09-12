@@ -58,7 +58,9 @@ export default async function PartnerHubPage() {
 
   if (referredIds.length > 0) {
     // Format array for Supabase .or() syntax: (id1,id2,id3)
-    const idsString = `(${referredIds.join(',')})`;
+  //  const idsString = `(${referredIds.join(',')})`;
+  // Wraps each UUID in double quotes so PostgREST parses them perfectly
+const idsString = `(${referredIds.map(id => `"${id}"`).join(',')})`;
 
     // Count open/active duels
     const { count: activeCount } = await supabase
