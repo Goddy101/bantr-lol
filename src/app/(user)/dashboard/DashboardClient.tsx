@@ -122,6 +122,21 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             Rank
           </Link>
+          <Link 
+  href="/profile" 
+  className="flex items-center gap-3 group ml-auto"
+>
+  <span className="hidden sm:block text-xs font-bold text-neutral-400 group-hover:text-white transition-colors uppercase tracking-widest">
+    My Profile
+  </span>
+
+  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_10px_rgba(52,211,153,0.1)] group-hover:shadow-[0_0_15px_rgba(52,211,153,0.3)] transition-all">
+    <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center font-black text-white text-sm uppercase">
+      {/* Dynamic Initial from the Server! */}
+      {userData.username.charAt(0)}
+    </div>
+  </div>
+</Link>
           <button onClick={handleSignOut} className="flex items-center justify-center w-8 h-8 text-neutral-400 bg-neutral-900 border border-neutral-800 rounded-lg hover:bg-neutral-800 hover:text-white transition-all">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           </button>

@@ -89,31 +89,81 @@ export async function GET(req: Request) {
  * API-Football (RapidAPI) gives 100 free calls/day. 
  * By batching, 100 calls = 100 distinct matches, which easily covers a weekend's top fixtures.
  */
-async function checkMatchStatusFromAPI(matchId: string) {
-  // Example using API-Football structure:
-  const res = await fetch(`https://v3.football.api-sports.io/fixtures?id=${matchId}`, {
-    headers: {
-      'x-apisports-key': process.env.API_FOOTBALL_KEY!,
-    }
-  });
-  
-  const data = await res.json();
-  const fixture = data.response[0];
 
-  if (!fixture || fixture.fixture.status.short !== 'FT') {
+
+
+async function checkMatchStatusFromAPI(matchId: string) {
+  try {
+    const apiKey = process.env.API_FOOTBALL_KEY;
+    if (!apiKey) {
+      console.error('🚨 Missing API_FOOTBALL_KEY in Vercel env variables!');
+      return { status: 'PENDING' };
+    }
+
+    const res = await fetch(`https://v3.football.api-sports.io/fixtures?id=${matchId}`, {
+      headers: {
+        'x-apisports-key': apiKey,
+      }
+    });
+    
+    const data = await res.json();
+
+    // 1. SAFEGUARD: Check if the API returned an error or empty response
+    if (!data || !data.response || data.response.length === 0) {
+      console.error(`⚠️ API-Football returned no data for match ${matchId}. Errors:`, data.errors);
+      return { status: 'PENDING' }; // Fail gracefully, check again next cron run
+    }
+
+    const fixture = data.response[0];
+
+    // 2. SAFEGUARD: Use optional chaining (?.) to prevent undefined crashes
+    if (fixture?.fixture?.status?.short !== 'FT') {
+      return { status: 'PENDING' };
+    }
+
+    // Determine the winning prediction based on goals
+    const homeGoals = fixture.score?.fulltime?.home ?? fixture.goals?.home ?? 0;
+    const awayGoals = fixture.score?.fulltime?.away ?? fixture.goals?.away ?? 0;
+    
+    let winningPrediction = 'draw';
+    if (homeGoals > awayGoals) winningPrediction = 'home';
+    if (awayGoals > homeGoals) winningPrediction = 'away';
+
+    return {
+      status: 'FINISHED',
+      winning_prediction: winningPrediction
+    };
+  } catch (error: any) {
+    console.error(`🚨 Fetch error for match ${matchId}:`, error.message);
     return { status: 'PENDING' };
   }
-
-  // Determine the winning prediction based on goals
-  const homeGoals = fixture.goals.home;
-  const awayGoals = fixture.goals.away;
-  
-  let winningPrediction = 'draw';
-  if (homeGoals > awayGoals) winningPrediction = 'home';
-  if (awayGoals > homeGoals) winningPrediction = 'away';
-
-  return {
-    status: 'FINISHED',
-    winning_prediction: winningPrediction
-  };
 }
+
+// async function checkMatchStatusFromAPI(matchId: string) {
+//   // Example using API-Football structure:
+//   const res = await fetch(`https://v3.football.api-sports.io/fixtures?id=${matchId}`, {
+//     headers: {
+//       'x-apisports-key': process.env.API_FOOTBALL_KEY!,
+//     }
+//   });
+  
+//   const data = await res.json();
+//   const fixture = data.response[0];
+
+//   if (!fixture || fixture.fixture.status.short !== 'FT') {
+//     return { status: 'PENDING' };
+//   }
+
+//   // Determine the winning prediction based on goals
+//   const homeGoals = fixture.goals.home;
+//   const awayGoals = fixture.goals.away;
+  
+//   let winningPrediction = 'draw';
+//   if (homeGoals > awayGoals) winningPrediction = 'home';
+//   if (awayGoals > homeGoals) winningPrediction = 'away';
+
+//   return {
+//     status: 'FINISHED',
+//     winning_prediction: winningPrediction
+//   };
+// }
