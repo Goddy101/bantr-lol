@@ -15,12 +15,8 @@ interface Fixture {
   league: string;
 }
 
-const STAKE_TIERS = [
-  { label: "Sapa Level", amount: 500, glow: false, icon: "🛡️" },
-  { label: "Standard Banter", amount: 2000, glow: false, icon: "⚔️" },
-  { label: "Men Mount", amount: 10000, glow: true, icon: "🔥" },
-  { label: "Odogwu / Whale", amount: 50000, glow: true, icon: "🐋" },
-];
+// Keep these for the quick-select chips!
+const QUICK_STAKES = [500, 2000, 10000, 50000];
 
 // 1. Define the SWR fetcher function
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -40,15 +36,19 @@ export default function CreateDuelPage() {
   
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<"home" | "away" | "draw" | null>(null);
-  const [stake, setStake] = useState<number>(2000);
+  const [stakeInput, setStakeInput] = useState<string>("2000"); // Store as string for the input field
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const activeMatch = fixtures.find((m) => m.id === selectedMatchId);
-  const potentialPayout = stake * 1.8; // Platform takes 10%, winner gets 1.8x
+  const currentStake = Number(stakeInput) || 0;
+  const potentialPayout = currentStake * 1.8; // Platform takes 10%, winner gets 1.8x
 
   const handleCreate = async () => {
-    if (!selectedMatchId || !prediction || !stake) return;
+    if (!selectedMatchId || !prediction || currentStake < 500) {
+      setErrorMsg("Minimum stake is ₦500.");
+      return;
+    }
     setIsSubmitting(true);
     setErrorMsg(null);
     
@@ -59,7 +59,7 @@ export default function CreateDuelPage() {
         body: JSON.stringify({
           match_id: selectedMatchId,
           prediction: prediction,
-          stake_amount: stake
+          stake_amount: currentStake
         })
       });
 
@@ -252,41 +252,58 @@ export default function CreateDuelPage() {
           </section>
         )}
 
-        {/* STEP 3: Set Stake */}
+        {/* 🚀 NEW STEP 3: Custom Stake Input */}
         {prediction && (
-          <section className="animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <section className="animate-in fade-in slide-in-from-bottom-8 duration-500 pb-20">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-7 h-7 rounded-full bg-neutral-800 text-white flex items-center justify-center font-black text-xs border border-neutral-700 shadow-inner">3</div>
               <h2 className="text-xs font-black text-neutral-300 uppercase tracking-widest">Put Money On It</h2>
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
-              {STAKE_TIERS.map((tier) => (
-                <button
-                  key={tier.amount}
-                  onClick={() => setStake(tier.amount)}
-                  className={`relative p-5 rounded-2xl border text-left transition-all duration-300 overflow-hidden ${
-                    stake === tier.amount 
-                      ? "bg-neutral-800 border-neutral-500 shadow-inner" 
-                      : "bg-neutral-900/80 border-neutral-800/80 hover:bg-neutral-800"
-                  } ${tier.glow && stake === tier.amount ? "shadow-[0_0_20px_rgba(250,204,21,0.15)] border-yellow-500/30" : ""}`}
-                >
-                  <div className="absolute top-2 right-3 text-lg opacity-80">{tier.icon}</div>
-                  <div className={`text-[10px] font-black uppercase tracking-widest mb-1.5 ${stake === tier.amount ? "text-neutral-400" : "text-neutral-600"}`}>
-                    {tier.label}
-                  </div>
-                  <div className={`font-black text-2xl tracking-tight ${tier.glow && stake === tier.amount ? "text-yellow-500" : stake === tier.amount ? "text-white" : "text-neutral-300"}`}>
-                    ₦{tier.amount.toLocaleString()}
-                  </div>
-                </button>
-              ))}
+            <div className="bg-neutral-900/80 border border-neutral-800 rounded-3xl p-6 text-center shadow-xl">
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-3 block">Enter Stake Amount</label>
+              
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <span className="text-3xl font-black text-neutral-500">₦</span>
+                <input
+                  type="number"
+                  min="500"
+                  value={stakeInput}
+                  onChange={(e) => setStakeInput(e.target.value)}
+                  className="bg-transparent text-5xl font-black text-white w-48 text-center focus:outline-none placeholder:text-neutral-700"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* Quick Select Chips */}
+              <div className="flex flex-wrap justify-center gap-2 mb-2">
+                {QUICK_STAKES.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setStakeInput(amount.toString())}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                      currentStake === amount
+                        ? "bg-neutral-200 text-black border-white"
+                        : "bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-600"
+                    }`}
+                  >
+                    +{amount >= 1000 ? `${amount/1000}k` : amount}
+                  </button>
+                ))}
+              </div>
+              
+              {currentStake < 500 && (
+                <div className="text-[10px] font-bold text-red-500 mt-3 uppercase tracking-widest">
+                  Minimum stake is ₦500
+                </div>
+              )}
             </div>
           </section>
         )}
       </div>
 
       {/* Sticky Bottom Action Bar with Potential Payout */}
-      {prediction && stake >= 500 && (
+      {prediction && currentStake >= 500 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-neutral-950 via-neutral-950/95 to-transparent animate-in slide-in-from-bottom-full duration-500 z-50">
           <div className="max-w-lg mx-auto">
             {/* Contextual Data above button */}
@@ -306,7 +323,7 @@ export default function CreateDuelPage() {
                   LOCKING ESCROW...
                 </>
               ) : (
-                `CONFIRM ₦${stake.toLocaleString()} STAKE`
+                `CONFIRM ₦${currentStake.toLocaleString()} STAKE`
               )}
             </button>
           </div>
