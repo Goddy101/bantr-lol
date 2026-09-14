@@ -10,5 +10,5 @@ jobs:
     steps:
       - name: Trigger Weekly Jackpot
         run: |
-          curl -X GET "https://bantr.lol/api/cron/weekly-jackpot" \
+          curl -k -f -sS -X GET "https://bantr.lol/api/cron/weekly-jackpot" \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

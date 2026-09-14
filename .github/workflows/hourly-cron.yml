@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Trigger Hourly Master Cron
         run: |
-          curl -f -sS -X GET "https://bantr.lol/api/cron/hourly" \
+          curl -k -f -sS -X GET "https://bantr.lol/api/cron/hourly" \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
 
 
