@@ -12,7 +12,6 @@ import SponsorCard from "@/components/shared/SponsorCard";
 import { createClient } from "@/lib/supabase/client";
 
 interface DashboardClientProps {
-
   userData: {
     id: string;
     username: string;
@@ -100,105 +99,85 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
   };
 
   return (
-    // INCREASED BOTTOM PADDING TO pb-40 TO PREVENT FAB OVERLAP
     <div className="min-h-screen bg-neutral-950 text-white pb-40 font-sans selection:bg-green-500/30">
       
-      {/* Top Navbar */}
-
-      {/* Inside DashboardClient.tsx - Top Header Row */}
-<div className="flex items-center gap-4 ml-auto">
-
-  {/* 🔥 THE VIP PARTNER HUB BUTTON (Only shows if they are a partner) */}
-  {userData.isPartner && (
-    <Link 
-      href="/partner" 
-      className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl hover:bg-yellow-500/20 transition-all group"
-    >
-      <svg className="w-4 h-4 text-yellow-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-      <span className="text-xs font-black text-yellow-500 uppercase tracking-widest">
-        VIP Hub
-      </span>
-    </Link>
-  )}
-
-  {/* Your existing Glowing Profile Avatar */}
-  <Link href="/profile" className="flex items-center gap-3 group">
-    <span className="hidden sm:block text-xs font-bold text-neutral-400 group-hover:text-white transition-colors uppercase tracking-widest">
-      My Profile
-    </span>
-    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_10px_rgba(52,211,153,0.1)]">
-      <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center font-black text-white text-sm uppercase">
-        {userData.username.charAt(0)}
-      </div>
-    </div>
-  </Link>
-
-</div>
-      <div className="bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-900 px-5 py-4 sticky top-0 z-50 flex justify-between items-center">
+      {/* 🚀 REORGANIZED UNIFIED HEADER */}
+      <nav className="bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-800/80 px-4 py-3 sticky top-0 z-50 flex justify-between items-center shadow-sm">
+        
+        {/* Left: User Identity */}
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_15px_rgba(52,211,153,0.15)]">
-            <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center font-black text-lg">
-              {userData.username.charAt(0).toUpperCase()}
+          <div>
+            <div className="text-[10px] text-neutral-500 font-bold tracking-widest uppercase mb-0.5">Welcome back</div>
+            <div className="font-black text-sm sm:text-base leading-none tracking-wide text-white truncate max-w-[120px] sm:max-w-xs">
+              @{userData.username}
             </div>
           </div>
-          <div>
-            <div className="text-[10px] text-neutral-500 font-bold tracking-widest uppercase">Welcome back</div>
-            <div className="font-black text-base leading-tight tracking-wide">@{userData.username}</div>
-          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link href="/leaderboard" className="flex items-center gap-1.5 text-[10px] font-black text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-3 py-2 rounded-lg hover:bg-yellow-500/20 transition-all tracking-widest uppercase">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            Rank
-          </Link>
-          <Link 
-  href="/profile" 
-  className="flex items-center gap-3 group ml-auto"
->
-  <span className="hidden sm:block text-xs font-bold text-neutral-400 group-hover:text-white transition-colors uppercase tracking-widest">
-    My Profile
-  </span>
+        {/* Right: Actions & Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          
+          {/* VIP Hub (Conditional) */}
+          {userData.isPartner && (
+            <Link href="/partner" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/20 transition-all group">
+              <svg className="w-3.5 h-3.5 text-yellow-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">VIP</span>
+            </Link>
+          )}
 
-  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_10px_rgba(52,211,153,0.1)] group-hover:shadow-[0_0_15px_rgba(52,211,153,0.3)] transition-all">
-    <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center font-black text-white text-sm uppercase">
-      {/* Dynamic Initial from the Server! */}
-      {userData.username.charAt(0)}
-    </div>
-  </div>
-</Link>
-          <button onClick={handleSignOut} className="flex items-center justify-center w-8 h-8 text-neutral-400 bg-neutral-900 border border-neutral-800 rounded-lg hover:bg-neutral-800 hover:text-white transition-all">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          {/* Gamified Profile Avatar (Clickable) */}
+          <Link href="/profile" className="group relative">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-[2px] shadow-[0_0_10px_rgba(52,211,153,0.1)] group-hover:shadow-[0_0_15px_rgba(52,211,153,0.3)] transition-all">
+              <div className="w-full h-full bg-neutral-900 rounded-full flex items-center justify-center font-black text-white text-sm sm:text-base uppercase">
+                {userData.username.charAt(0)}
+              </div>
+            </div>
+          </Link>
+
+          {/* Logout Button */}
+          <button onClick={handleSignOut} className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-neutral-400 bg-neutral-900/50 border border-neutral-800 rounded-full hover:bg-neutral-800 hover:text-white transition-all active:scale-95">
+            <svg className="w-4 h-4 sm:w-4 sm:h-4 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
           </button>
         </div>
-      </div>
+      </nav>
 
-      <div className="p-4 max-w-lg mx-auto space-y-6 mt-2">
-        {/* THE BANTR ROAST BAR - Smoother alignment */}
-        <div className="bg-red-500/5 border border-red-500/10 py-2 px-3 rounded-xl flex items-center gap-3 overflow-hidden">
-          <div className="bg-red-500/10 text-red-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm whitespace-nowrap">Daily Banter</div>
+      <div className="p-4 max-w-lg mx-auto space-y-5 mt-2">
+        
+        {/* 🔥 BANTR ROAST BAR */}
+        <div className="bg-red-500/5 border border-red-500/10 py-2 px-3 rounded-xl flex items-center gap-3 overflow-hidden shadow-sm">
+          <div className="bg-red-500/10 text-red-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm whitespace-nowrap">
+            Daily Banter
+          </div>
           <p className="text-xs font-medium text-red-300/80 truncate italic">"{dailyRoast}"</p>
         </div>
 
-        {/* --- THE VAULT CARD --- */}
-        <div className="bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
-          <div className="absolute -top-20 -right-20 w-56 h-56 bg-green-500/10 rounded-full blur-3xl transition-all duration-500" />
+        {/* 💰 THE VAULT CARD */}
+        <div className="bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+          {/* Subtle Glow */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-green-500/10 rounded-full blur-3xl pointer-events-none transition-all duration-700 group-hover:bg-green-500/15" />
           
           <div className="flex justify-between items-start mb-6 relative z-10">
             <div>
               <div className="text-[11px] text-neutral-400 font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                Total Balance
+                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                Total Vault
               </div>
-              <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">₦{balance.toLocaleString()}</div>
+              <div className="text-4xl sm:text-5xl font-black text-white tracking-tight drop-shadow-sm">
+                ₦{balance.toLocaleString()}
+              </div>
             </div>
             
-            <div className="text-right bg-neutral-950/80 border border-neutral-800/80 rounded-xl p-3 backdrop-blur-md shadow-inner">
+            {/* Rank Badge */}
+            <div className="text-right bg-neutral-950/80 border border-neutral-800/80 rounded-xl p-3 backdrop-blur-md shadow-inner flex flex-col items-end justify-center">
               <div className="text-[9px] text-yellow-500 font-black uppercase tracking-widest mb-0.5">Ball IQ</div>
-              <div className="text-xl font-black text-white leading-none">{ballIq} <span className="text-xs text-neutral-500 font-bold tracking-normal">pts</span></div>
-              <div className="text-[10px] text-neutral-400 mt-1 font-bold">{userData.rank}</div>
+              <div className="text-xl font-black text-white leading-none">{ballIq} <span className="text-[10px] text-neutral-500 font-bold">pts</span></div>
+              <Link href="/leaderboard" className="text-[9px] text-neutral-400 hover:text-white transition-colors mt-1 font-bold uppercase tracking-widest bg-neutral-900 px-1.5 py-0.5 rounded">
+                {userData.rank} ↗
+              </Link>
             </div>
           </div>
 
@@ -207,7 +186,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
             {/* Withdrawable */}
             <div className="bg-neutral-950/60 border border-neutral-800/50 rounded-2xl p-4 text-left shadow-inner flex flex-col justify-center">
               <div className="text-[10px] font-bold text-green-500/80 uppercase tracking-widest mb-1">Withdrawable</div>
-              <div className="text-xl font-black text-green-400">₦{withdrawable.toLocaleString()}</div>
+              <div className="text-xl font-black text-green-400 tracking-tight">₦{withdrawable.toLocaleString()}</div>
             </div>
 
             {/* Unplayed / Locked */}
@@ -219,7 +198,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
                 Unplayed
                 <span className="w-4 h-4 rounded-full bg-orange-500/10 text-orange-400 flex items-center justify-center text-[10px] font-black group-hover/tooltip:bg-orange-500/20 transition-colors">?</span>
               </div>
-              <div className="text-xl font-black text-orange-400">₦{locked.toLocaleString()}</div>
+              <div className="text-xl font-black text-orange-400 tracking-tight">₦{locked.toLocaleString()}</div>
             </div>
           </div>
 
@@ -246,8 +225,8 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
           </div>
         </div>
 
-        {/* Custom Segmented Tabs */}
-        <div className="flex bg-neutral-900 rounded-xl p-1 border border-neutral-800/80 shadow-inner">
+        {/* 📑 CUSTOM TABS */}
+        <div className="flex bg-neutral-900 rounded-xl p-1 border border-neutral-800/80 shadow-inner mt-2">
           <button 
             onClick={() => setActiveTab("active")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 ${activeTab === "active" ? "bg-neutral-800 text-white shadow-sm border border-neutral-700/50" : "text-neutral-500 hover:text-neutral-300"}`}
@@ -262,7 +241,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
           </button>
         </div>
 
-        {/* Tab Content */}
+        {/* --- TAB CONTENT --- */}
         <div className="space-y-4">
           
           {/* ACTIVE TAB */}
@@ -304,18 +283,16 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
                     </div>
                   </div>
 
-                  {/* Sleeker VS Head-to-Head Section */}
-                  <div className="bg-neutral-950 rounded-xl p-1.5 flex items-center border border-neutral-800/60 shadow-inner">
-                    <div className="flex-1 py-2 px-2 text-center rounded-lg bg-neutral-900/50">
+                  {/* ⚔️ IMPROVED VS TICKET LAYOUT */}
+                  <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center bg-neutral-950 rounded-xl p-2 border border-neutral-800/60 shadow-inner">
+                    <div className="py-2 px-2 text-center rounded-lg bg-neutral-900/50">
                       <div className="text-[9px] text-neutral-500 font-bold uppercase mb-1">Your Pick</div>
                       <div className="font-black text-white text-sm truncate">{duel.prediction_creator || duel.myPick || "Unknown"}</div>
                     </div>
                     
-                    <div className="px-3 flex items-center justify-center">
-                      <div className="text-[10px] font-black text-neutral-600 italic">VS</div>
-                    </div>
+                    <div className="text-[10px] font-black text-neutral-600 italic px-1">VS</div>
 
-                    <div className="flex-1 py-2 px-2 text-center rounded-lg bg-neutral-900/50">
+                    <div className="py-2 px-2 text-center rounded-lg bg-neutral-900/50">
                       <div className="text-[9px] text-neutral-500 font-bold uppercase mb-1">Opponent</div>
                       {duel.opponent ? (
                          <div className="font-bold text-neutral-300 text-sm truncate">@{duel.opponent}</div>
@@ -418,7 +395,7 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
 
       </div>
 
-      {/* Floating Action Button - Padding fixed by pb-40 on parent */}
+      {/* 🚀 FLOATING ACTION BUTTONS */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-10 bg-gradient-to-t from-neutral-950 via-neutral-950/95 to-transparent z-40 pointer-events-none">
         <div className="w-full max-w-lg mx-auto flex flex-col gap-2 pointer-events-auto">
           <button 
@@ -443,4 +420,3 @@ export default function DashboardClient({ userData, activeDuels, pastDuels, dail
     </div>
   );
 }
-
